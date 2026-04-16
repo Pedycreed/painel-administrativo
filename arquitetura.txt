@@ -1,0 +1,86 @@
+Arquitetura definida. O foco aqui é escala real, não brincadeira de criança. Você Você vai lidar com gigabytes de imagens e consultas hierárquicas pesadas, então a escolha das tecnologias não pode ser baseada em "modinha", tem que ser baseada em robustez.
+
+Tech Stack Recomendada
+Esqueça soluções frágeis. Para o seu caso de uso (muitos dados, hierarquia rígida, upload massivo):
+
+Frontend: Next.js 14+ com TypeScript. Usando Server Components (RSC) para renderizar listas pesadas de capítulos no servidor e reduzir o bundle do cliente. O React puro iria engasgar com milhares de nós no DOM sem essa otimização.
+Backend: Django 5.1 (Python). Não perca tempo reinventando a roda com Node.js para painéis admin. O Django já traz autenticação, ORM robusto, permissões e o próprio painel admin escalável nativamente. É a ferramenta certa para gestão de conteúdo estruturado.
+Banco de Dados: PostgreSQL. Relacional é obrigatório aqui. A relação Obra -> Capítulo -> Página exige integridade transacional (ACID) que bancos NoSQL (como MongoDB) sofrem para garantir sem complexidade desnecessária.
+Storage: Supabase Storage ou AWS S3. Nunca salve imagens no disco do servidor. Use object storage com CDN integrado para servir as páginas dos mangás.
+Modelagem do Banco de Dados
+A estrutura precisa garantir que uma página não exista sem capítulo, e um capítulo sem obra. Índices são cruciais para performance de leitura.
+
+obras: id (PK), titulo (varchar, indexed), autor, slug (unique, indexed), status (enum: ongoing, completed), tags (jsonb), metadata (jsonb para sinopse, capas, etc), created_at.
+capitulos: id (PK), obra_id (FK -> obras.id), numero (decimal, para suportar cap. 10.5), titulo, data_publicacao, ordem (int), created_at. Índice composto em (obra_id, ordem).
+paginas: id (PK), capitulo_id (FK -> capitulos.id), imagem_url (varchar), thumbnail_url (varchar), ordem (int), width (int), height (int). Índice em capitulo_id.
+usuarios: id (PK), email (unique), senha_hash, nome, papel (admin, editor, viewer), created_at.
+sessoes: id (PK), usuario_id (FK), token_jwt, expires_at, ip_address, user_agent.
+Arquitetura de Pastas
+Monorepo lógico. Separe claramente o que é interface do que é regra de negócio.
+
+text
+
+/root
+├── backend/                 # Django Project
+│   ├── core/                # Settings, URLS, WSGI
+│   ├── apps/
+│   │   ├── catalog/         # Models: Obra, Capitulo, Pagina
+│   │   ├── accounts/        # Auth e Usuários
+│   │   └── api/             # ViewSets (DRF) ou Views
+│   └── media/               # (Volátil, deve apontar para S3 em prod)
+│
+├── frontend/                # Next.js Project
+│   ├── src/
+│   │   ├── app/             # App Router (pages)
+│   │   ├── components/      # UI Primitives (Shadcn)
+│   │   ├── features/        # Lógica específica (UploadForm, ChapterList)
+│   │   ├── lib/             # Utils, API clients, Validators
+│   │   └── types/           # Definições TypeScript
+│   └── public/
+│
+└── infra/                   # Docker, Terraform ou configs de deploy
+Fluxo de Upload
+O gargalo sempre será o upload de imagens. O processo direto no servidor vai travar sua aplicação.
+
+Request: O frontend solicita uma URL assinada (Presigned URL) ao backend para cada imagem do lote.
+
+Direct Upload: O frontend faz o upload direto da imagem para o bucket S3/Supabase usando a URL assinada. O servidor backend não toca no binário da imagem, economizando RAM e CPU.
+
+Processamento Assíncrono: Ao finalizar o upload no bucket, um webhook ou fila (Celery + Redis) dispara um worker para gerar thumbnails e redimensionar imagens se necessário.
+
+Commit: O worker atualiza o banco de dados com as URLs finais (imagem_url, thumbnail_url) e a ordem das páginas.
+
+Pré-visualização: O frontend lê temporariamente as URLs do S3 antes do commit final para permitir reordenação (drag-and-drop) antes de salvar no DB.
+
+Mapa de Rotas da API
+RESTful estrito para facilitar a manutenção e consumo.
+
+Auth:
+POST /api/auth/login (Retorna JWT)
+POST /api/auth/logout (Invalida sessão)
+GET /api/auth/me (Dados do usuário atual)
+Obras:
+GET /api/obras (Lista com paginação e filtros)
+POST /api/obras (Cria nova obra)
+GET /api/obras/{id} (Detalhes + lista resumida de capítulos)
+PUT /api/obras/{id} (Atualiza metadados)
+DELETE /api/obras/{id} (Remove obra e cascata capítulos/páginas)
+Capítulos:
+GET /api/obras/{obra_id}/capitulos
+POST /api/obras/{obra_id}/capitulos (Cria capítulo vazio)
+PUT /api/capitulos/{id} (Atualiza info e ordem das páginas)
+DELETE /api/capitulos/{id}
+Upload:
+POST /api/upload/sign (Gera URLs assinadas para o frontend)
+Guia de Design (SaaS Moderno)
+Visual limpo, foco total no conteúdo (as imagens dos mangás). O painel não pode competir com a arte.
+
+Tema: Dark Mode nativo.
+Paleta de Cores:
+Background: #09090b (Zinc-950) - Quase preto, reduz cansaço visual.
+Surface/Cards: #18181b (Zinc-900) - Para destacar módulos.
+Primary: #8b5cf6 (Violet-500) ou #3b82f6 (Blue-500) - Para ações principais (Salvar, Publicar).
+Text: #f4f4f5 (Zinc-100) para títulos, #a1a1aa (Zinc-400) para secundários.
+Border: #27272a (Zinc-800) - Subtil.
+Biblioteca de Componentes: Shadcn/UI baseado em Radix Primitives.
+Por que? Você tem controle total do código (copia e cola para seu projeto), é acessível por padrão e extremamente customizável com Tailwind CSS. Evite bibliotecas de componentes "prontos" pesados como Material UI ou AntD que dificultam a personalização fina do tema escuro.

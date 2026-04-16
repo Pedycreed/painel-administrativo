@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next:*)",
+      "Bash(find:*)",
+      "Bash(grep -A 30 export.*BaseUIComponentProps 'C:/Users/Flavia/Downloads/Compressed/site 3.0/frontend/node_modules/@base-ui/react/utils/types.d.ts')",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(curl -s http://localhost:8000/api/obras/)",
+      "Bash(python manage.py makemigrations catalog)",
+      "Bash(python manage.py migrate catalog)"
+    ]
+  }
+}
