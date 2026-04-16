@@ -17,6 +17,16 @@ class ObraViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['^titulo', '^autor', '^slug']
 
+class ScanObraViewSet(ObraViewSet):
+    """ViewSet específico para obras da Scan."""
+    def get_queryset(self):
+        return Obra.objects.filter(fonte='scan').prefetch_related('capitulos__paginas')
+
+class AgregadorObraViewSet(ObraViewSet):
+    """ViewSet específico para obras do Agregador."""
+    def get_queryset(self):
+        return Obra.objects.filter(fonte='agregador').prefetch_related('capitulos__paginas')
+
 class CapituloViewSet(viewsets.ModelViewSet):
     queryset = Capitulo.objects.all().select_related('obra').prefetch_related('paginas')
     serializer_class = CapituloSerializer
