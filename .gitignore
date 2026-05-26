@@ -1,4 +1,3 @@
-```
 # Python cache
 __pycache__/
 *.pyc
@@ -12,9 +11,15 @@ node_modules/
 .env
 .env.local
 .env.*
+!.env.example
 
 # Database
 db.sqlite3
+db.sqlite3.*
+
+# Backups de migração (contêm hashes de senha — nunca versionar)
+backup_*.json
+*.sql.gz
 
 # Logs
 *.log
@@ -41,8 +46,12 @@ htmlcov/
 dist/
 build/
 target/
+staticfiles/
+
+# Next.js build
+frontend/.next/
+frontend/out/
 
 # Virtual environments
 venv/
 .venv/
-```
