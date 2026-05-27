@@ -99,9 +99,11 @@ export async function apiFetch<T>(
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`
   const token = getAccessToken()
 
-  const headers: HeadersInit = {
+  // Record<string, string> (em vez de HeadersInit) pra TS permitir
+  // indexar com chaves arbitrárias tipo 'Authorization'.
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string> | undefined),
   }
 
   if (token) {
@@ -187,7 +189,7 @@ export async function apiPostForm<T>(endpoint: string, formData: FormData): Prom
   const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`
   const token = getAccessToken()
 
-  const headers: HeadersInit = {}
+  const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   let res = await fetch(url, { method: 'POST', headers, body: formData })
