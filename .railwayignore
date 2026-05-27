@@ -1,0 +1,9 @@
+# Arquivos que o Railway não precisa subir no deploy do Django
+frontend/
+node_modules/
+*.md
+.vscode/
+.idea/
+.claude/
+backup_*.json
+db.sqlite3*
