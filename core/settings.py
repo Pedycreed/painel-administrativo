@@ -95,6 +95,11 @@ CORS_ALLOWED_ORIGINS = _env_list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+# Log temporário pra debug — remover depois que confirmar que CORS funciona
+import sys
+print(f"[CORS DEBUG] CORS_ALLOWED_ORIGINS = {CORS_ALLOWED_ORIGINS!r}", file=sys.stderr)
+print(f"[CORS DEBUG] raw env DJANGO_CORS_ALLOWED_ORIGINS = {os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS')!r}", file=sys.stderr)
+
 
 # ============================================================
 # URLs / templates / WSGI
