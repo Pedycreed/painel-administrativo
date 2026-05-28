@@ -148,3 +148,78 @@ def delete_object(key: str) -> None:
         logging.getLogger(__name__).warning(
             'Falha ao deletar %s do R2: %s', key, e
         )
+
+
+def delete_prefix(prefix: str) -> int:
+    """
+    Deleta TODOS os objetos do bucket que começam com `prefix`.
+
+    Útil pra apagar uma "pasta" inteira (R2/S3 não tem pastas reais, mas
+    `mangas/{slug}/` agrupa tudo de uma obra). Usa list+bulk-delete em lotes
+    de 1000 (limite da API).
+
+    Retorna o número de objetos deletados. Não erra se a "pasta" não existir.
+    Best-effort: loga falhas e segue.
+    """
+    if not prefix:
+        return 0
+
+    client = get_client()
+    bucket = get_bucket()
+    import logging
+    log = logging.getLogger(__name__)
+
+    deleted = 0
+    continuation_token: Optional[str] = None
+
+    while True:
+        list_kwargs = {'Bucket': bucket, 'Prefix': prefix, 'MaxKeys': 1000}
+        if continuation_token:
+            list_kwargs['ContinuationToken'] = continuation_token
+
+        try:
+            resp = client.list_objects_v2(**list_kwargs)
+        except (BotoCoreError, ClientError) as e:
+            log.warning('Falha ao listar prefix %s no R2: %s', prefix, e)
+            return deleted
+
+        contents = resp.get('Contents', [])
+        if not contents:
+            return deleted
+
+        # Bulk delete (até 1000 por chamada)
+        objects = [{'Key': obj['Key']} for obj in contents]
+        try:
+            client.delete_objects(
+                Bucket=bucket,
+                Delete={'Objects': objects, 'Quiet': True},
+            )
+            deleted += len(objects)
+        except (BotoCoreError, ClientError) as e:
+            log.warning(
+                'Falha ao deletar lote de %s objetos com prefix %s: %s',
+                len(objects), prefix, e,
+            )
+
+        if not resp.get('IsTruncated'):
+            return deleted
+        continuation_token = resp.get('NextContinuationToken')
+
+
+def key_from_public_url(url: str) -> Optional[str]:
+    """
+    Extrai o key (caminho dentro do bucket) de uma URL pública do R2.
+
+    Ex: 'https://pub-xxx.r2.dev/mangas/solo/capa.jpg' -> 'mangas/solo/capa.jpg'
+    Retorna None se a URL estiver vazia ou não bater com R2_PUBLIC_URL.
+    """
+    if not url:
+        return None
+    base = os.environ.get('R2_PUBLIC_URL', '').rstrip('/')
+    if base and url.startswith(base + '/'):
+        return url[len(base) + 1:]
+    # Fallback: se a URL é absoluta mas não casa com R2_PUBLIC_URL, retorna None
+    if url.startswith('http://') or url.startswith('https://'):
+        return None
+    # URL já parece ser só a key relativa
+    return url.lstrip('/')
