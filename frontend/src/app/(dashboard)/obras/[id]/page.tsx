@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
@@ -30,9 +31,11 @@ interface Capitulo {
 }
 
 export default function ObraPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter()
   const [obra, setObra] = useState<Obra | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [deleting, setDeleting] = useState(false)
 
   async function fetchObra(slug: string) {
     try {
@@ -52,6 +55,27 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
       if (obra) fetchObra(obra.slug)
     } catch (e) {
       alert(e instanceof Error ? e.message : "Erro ao deletar capítulo")
+    }
+  }
+
+  async function deleteObra() {
+    if (!obra) return
+    const msg = `Tem certeza que deseja EXCLUIR a obra "${obra.titulo}"?\n\nIsso vai deletar TODOS os capítulos e páginas dela. Essa ação NÃO pode ser desfeita.`
+    if (!confirm(msg)) return
+    // Confirmação dupla — digitar o título pra evitar acidente
+    const confirmTitulo = prompt(`Pra confirmar, digite o título exato da obra:\n\n${obra.titulo}`)
+    if (confirmTitulo !== obra.titulo) {
+      if (confirmTitulo !== null) alert("Título não confere. Exclusão cancelada.")
+      return
+    }
+    setDeleting(true)
+    try {
+      await apiDelete(`/obras/${obra.slug}/`)
+      // Volta pra lista do time da obra
+      router.push(obra.fonte === "agregador" ? "/agregador" : "/scan")
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Erro ao excluir obra")
+      setDeleting(false)
     }
   }
 
@@ -105,6 +129,15 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
               >
                 Edição Avançada →
               </Link>
+              <button
+                onClick={deleteObra}
+                disabled={deleting}
+                className="text-destructive hover:bg-destructive/10 text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Excluir obra"
+              >
+                <Trash2 className="w-4 h-4" />
+                {deleting ? "Excluindo..." : "Excluir"}
+              </button>
             </div>
           </div>
 
