@@ -124,16 +124,41 @@ class PaginaViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Página deve pertencer a uma obra do seu time.')
         serializer.save()
 
-def _validar_ext(nome_arquivo: str):
-    """Retorna a extensão normalizada ou (None, mensagem de erro)."""
-    if '.' not in (nome_arquivo or ''):
-        return None, 'Arquivo sem extensão.'
-    ext = nome_arquivo.rsplit('.', 1)[-1].lower()
-    if ext == 'jpeg':
-        ext = 'jpg'
-    if ext not in ALLOWED_IMAGE_EXTS:
-        return None, f'Extensão não permitida. Aceitas: {", ".join(sorted(ALLOWED_IMAGE_EXTS))}.'
-    return ext, None
+_CONTENT_TYPE_TO_EXT = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+}
+
+
+def _validar_ext(nome_arquivo: str, content_type: str = ''):
+    """
+    Retorna a extensão normalizada ou (None, mensagem de erro).
+
+    Estratégia em duas camadas:
+    1. Tenta extrair extensão do nome do arquivo
+    2. Fallback: deduz do content_type (importante pra uploads mobile que
+       às vezes mandam nome vazio ou genérico tipo "image.jpg")
+    """
+    ext = None
+    if '.' in (nome_arquivo or ''):
+        ext = nome_arquivo.rsplit('.', 1)[-1].lower()
+        if ext == 'jpeg':
+            ext = 'jpg'
+        if ext in ALLOWED_IMAGE_EXTS:
+            return ext, None
+        # Extensão inválida — tenta o fallback antes de rejeitar
+
+    # Fallback pelo content_type (mobile costuma faltar nome decente)
+    ct = (content_type or '').lower().split(';')[0].strip()
+    fallback = _CONTENT_TYPE_TO_EXT.get(ct)
+    if fallback:
+        return fallback, None
+
+    if ext is None:
+        return None, 'Arquivo sem extensão e sem content-type reconhecido.'
+    return None, f'Extensão "{ext}" não permitida. Aceitas: {", ".join(sorted(ALLOWED_IMAGE_EXTS))}.'
 
 
 @api_view(['POST'])
@@ -166,7 +191,7 @@ def upload_imagem(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    ext, erro = _validar_ext(arquivo.name or '')
+    ext, erro = _validar_ext(arquivo.name or '', arquivo.content_type or '')
     if erro:
         return Response({'error': erro}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -247,7 +272,7 @@ def upload_pagina(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    ext, erro = _validar_ext(arquivo.name or '')
+    ext, erro = _validar_ext(arquivo.name or '', arquivo.content_type or '')
     if erro:
         return Response({'error': erro}, status=status.HTTP_400_BAD_REQUEST)
 
