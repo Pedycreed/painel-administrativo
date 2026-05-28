@@ -85,7 +85,9 @@ class UsuarioGestaoSerializer(serializers.ModelSerializer):
                 })
 
         # Todo usuário não-superuser precisa de time
-        if not time_alvo:
+        # (superuser pode ter time=None — ele tem acesso transversal)
+        alvo_eh_super = getattr(self.instance, 'is_superuser', False)
+        if not alvo_eh_super and not time_alvo:
             raise serializers.ValidationError({
                 'time': 'Time é obrigatório.'
             })

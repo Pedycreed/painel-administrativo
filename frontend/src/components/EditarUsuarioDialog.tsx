@@ -56,8 +56,12 @@ export default function EditarUsuarioDialog({ usuario, onUpdated }: EditarUsuari
     try {
       const payload: Record<string, unknown> = {
         email,
-        time,
         is_active: isActive,
+      }
+      // Superuser tem time=null (acesso transversal). Não mandar time
+      // pra não sobrescrever pra "scan" acidentalmente.
+      if (!usuario.is_superuser) {
+        payload.time = time
       }
       if (password) payload.password = password
       await apiPatch(`/auth/usuarios/${usuario.id}/`, payload)
