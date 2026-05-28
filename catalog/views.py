@@ -170,17 +170,33 @@ def upload_imagem(request):
     if erro:
         return Response({'error': erro}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Limite de tamanho: 15MB (celular faz fotos grandes, mas precisamos limitar
+    # pra não estourar memória do container nem timeout do Railway)
+    MAX_UPLOAD_MB = 15
+    if arquivo.size and arquivo.size > MAX_UPLOAD_MB * 1024 * 1024:
+        return Response(
+            {'error': f'Imagem muito grande ({arquivo.size // 1024 // 1024}MB). Limite: {MAX_UPLOAD_MB}MB. Reduza a qualidade ou redimensione antes de enviar.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     try:
         key = f'mangas/{slug}/capa.{ext}'
         content_type = arquivo.content_type or f'image/{ext}'
         public_url = upload_bytes(key, arquivo.read(), content_type=content_type)
         return Response({'url': public_url}, status=status.HTTP_200_OK)
     except R2ConfigError as e:
+        import logging
+        logging.getLogger(__name__).error('R2ConfigError no upload_imagem: %s', e)
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
+        import logging
         import traceback
-        traceback.print_exc()
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logging.getLogger(__name__).error(
+            'Erro no upload_imagem (slug=%s, arquivo=%s, size=%s): %s\n%s',
+            slug, getattr(arquivo, 'name', '?'),
+            getattr(arquivo, 'size', '?'), e, traceback.format_exc(),
+        )
+        return Response({'error': f'Falha no upload: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -235,14 +251,30 @@ def upload_pagina(request):
     if erro:
         return Response({'error': erro}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Limite de tamanho: 15MB
+    MAX_UPLOAD_MB = 15
+    if arquivo.size and arquivo.size > MAX_UPLOAD_MB * 1024 * 1024:
+        return Response(
+            {'error': f'Imagem muito grande ({arquivo.size // 1024 // 1024}MB). Limite: {MAX_UPLOAD_MB}MB. Reduza a qualidade ou redimensione antes de enviar.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     try:
         key = f'mangas/{slug}/cap-{capitulo_numero}/p-{ordem:03d}.{ext}'
         content_type = arquivo.content_type or f'image/{ext}'
         public_url = upload_bytes(key, arquivo.read(), content_type=content_type)
         return Response({'url': public_url}, status=status.HTTP_200_OK)
     except R2ConfigError as e:
+        import logging
+        logging.getLogger(__name__).error('R2ConfigError no upload_pagina: %s', e)
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
+        import logging
         import traceback
-        traceback.print_exc()
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logging.getLogger(__name__).error(
+            'Erro no upload_pagina (slug=%s, cap=%s, ordem=%s, arquivo=%s, size=%s): %s\n%s',
+            slug, capitulo_numero, ordem,
+            getattr(arquivo, 'name', '?'),
+            getattr(arquivo, 'size', '?'), e, traceback.format_exc(),
+        )
+        return Response({'error': f'Falha no upload: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
