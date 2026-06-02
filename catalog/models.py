@@ -1,4 +1,6 @@
 from django.db import models
+from django.conf import settings
+
 
 class Obra(models.Model):
     STATUS_CHOICES = [
@@ -9,11 +11,16 @@ class Obra(models.Model):
         ('scan', 'Scan'),
         ('agregador', 'Agregador'),
     ]
+    IDIOMA_CHOICES = [
+        ('pt', 'Português'),
+        ('en', 'English'),
+    ]
     titulo = models.CharField(max_length=255, db_index=True)
     autor = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ongoing')
     fonte = models.CharField(max_length=20, choices=FONTE_CHOICES, default='scan')
+    idioma = models.CharField(max_length=2, choices=IDIOMA_CHOICES, default='pt', db_index=True)
     capa_url = models.CharField(max_length=500, blank=True)
     sinopse = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)
@@ -51,3 +58,33 @@ class Pagina(models.Model):
 
     def __str__(self):
         return f'Página {self.ordem} - {self.capitulo}'
+
+
+class Favorito(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favoritos'
+    )
+    obra = models.ForeignKey(Obra, on_delete=models.CASCADE, related_name='favoritos')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario', 'obra')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.usuario} ★ {self.obra}'
+
+
+class HistoricoLeitura(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='historico'
+    )
+    capitulo = models.ForeignKey(Capitulo, on_delete=models.CASCADE, related_name='historico')
+    lido_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['usuario', '-lido_em'])]
+        ordering = ['-lido_em']
+
+    def __str__(self):
+        return f'{self.usuario} → {self.capitulo}'

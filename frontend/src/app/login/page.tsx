@@ -180,7 +180,7 @@ export default function LoginPage() {
 
         {/* Demo credentials */}
         <p className="text-center text-[oklch(0.4_0_0)] text-xs mt-4">
-          Demo: admin / admin123
+          Demo: Entre em contato com o seu Adm
         </p>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { apiPut } from "@/lib/api"
 
 interface EditarObraDialogProps {
-  obra: { id: number; titulo: string; autor: string; status: string; slug: string; fonte?: string }
+  obra: { id: number; titulo: string; autor: string; status: string; slug: string; fonte?: string; idioma?: string }
   onUpdated: () => void
 }
 
@@ -16,6 +16,7 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
   const [titulo, setTitulo] = useState(obra.titulo)
   const [autor, setAutor] = useState(obra.autor)
   const [status, setStatus] = useState(obra.status)
+  const [idioma, setIdioma] = useState(obra.idioma || "pt")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -38,7 +39,8 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
         autor,
         slug: novoSlug,
         status,
-        fonte: obra.fonte || "scan"
+        fonte: obra.fonte || "scan",
+        idioma,
       })
       setOpen(false)
       onUpdated()
@@ -55,6 +57,7 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
         setTitulo(obra.titulo)
         setAutor(obra.autor)
         setStatus(obra.status)
+        setIdioma(obra.idioma || "pt")
       }
       setOpen(o)
     }}>
@@ -96,6 +99,17 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
               >
                 <option value="ongoing">Ongoing</option>
                 <option value="completed">Complete</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[oklch(0.55_0_0)] text-sm">Idioma</label>
+              <select
+                className="bg-[oklch(0.16_0_0)] border border-border text-foreground rounded-md px-3 py-2 text-sm"
+                value={idioma}
+                onChange={(e) => setIdioma(e.target.value)}
+              >
+                <option value="pt">Português</option>
+                <option value="en">English</option>
               </select>
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}

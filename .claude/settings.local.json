@@ -51,7 +51,22 @@
       "Bash(git rm *)",
       "Bash(grep -E \"\\(\\\\.pyc$|__pycache__\\)\")",
       "Bash(git check-ignore *)",
-      "Bash(grep -E \"^\\\\.env$|backup_supabase\\\\.json\")"
+      "Bash(grep -E \"^\\\\.env$|backup_supabase\\\\.json\")",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(where git *)",
+      "Read(//c/Program Files/Git/mingw64/ssl/**)",
+      "Bash(find \"/c/Program Files/Git\" -name \"ca-bundle*\" 2>&1 | head -3)",
+      "Read(//c/Program Files/Git/**)",
+      "Bash(git config *)",
+      "Bash(curl -i -X OPTIONS https://web-production-8710d.up.railway.app/api/auth/login/ -H \"Origin: https://painel-administrativo-omega.vercel.app\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: content-type\")",
+      "Bash(python fix_superuser_time.py)",
+      "Bash(dir /s /b *.tsx)",
+      "Bash(findstr /i \"obra\")",
+      "WebFetch(domain:nexustoons.com)",
+      "WebSearch",
+      "WebFetch(domain:mangotoons.com)"
     ]
   }
 }

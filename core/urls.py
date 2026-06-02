@@ -5,7 +5,12 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from catalog.views import ObraViewSet, CapituloViewSet, PaginaViewSet, upload_imagem, upload_pagina, ScanObraViewSet, AgregadorObraViewSet
+from catalog.views import (
+    ObraViewSet, CapituloViewSet, PaginaViewSet,
+    upload_imagem, upload_pagina, upload_capitulo_zip,
+    ScanObraViewSet, AgregadorObraViewSet,
+    PublicObraViewSet, FavoritoViewSet, HistoricoViewSet,
+)
 from accounts.views import (
     RegistroView,
     LoginView,
@@ -21,6 +26,15 @@ router.register(r'obras', ObraViewSet, basename='obra')
 router.register(r'capitulos', CapituloViewSet, basename='capitulo')
 router.register(r'paginas', PaginaViewSet, basename='pagina')
 router.register(r'auth/usuarios', UsuariosViewSet, basename='usuario-gestao')
+
+# Router público (BiToons)
+public_router = DefaultRouter()
+public_router.register(r'obras', PublicObraViewSet, basename='public-obra')
+
+# Router autenticado (favoritos + histórico)
+user_router = DefaultRouter()
+user_router.register(r'favoritos', FavoritoViewSet, basename='favorito')
+user_router.register(r'historico', HistoricoViewSet, basename='historico')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -41,6 +55,13 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/upload/imagem/', upload_imagem, name='upload-imagem'),
     path('api/upload/pagina/', upload_pagina, name='upload-pagina'),
+    path('api/upload/capitulo-zip/', upload_capitulo_zip, name='upload-capitulo-zip'),
+
+    # API pública (BiToons)
+    path('api/public/', include(public_router.urls)),
+
+    # API autenticada (favoritos + histórico)
+    path('api/', include(user_router.urls)),
 
     # Rotas separadas por fonte (Scan)
     path('api/scan/', include([

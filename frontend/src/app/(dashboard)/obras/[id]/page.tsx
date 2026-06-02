@@ -8,6 +8,7 @@ import Link from "next/link"
 import { ArrowLeft, Trash2 } from "lucide-react"
 import NovoCapituloDialog from "@/components/NovoCapituloDialog"
 import EditarObraDialog from "@/components/EditarObraDialog"
+import PreviewCapituloDialog from "@/components/PreviewCapituloDialog"
 import { apiGet, apiDelete } from "@/lib/api"
 
 interface Obra {
@@ -17,6 +18,7 @@ interface Obra {
   slug: string
   status: string
   fonte: string
+  idioma?: string
   capa_url: string | null
   sinopse: string
   tags: string[]
@@ -150,6 +152,11 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
             <Badge className="bg-[oklch(0.16_0_0)] text-[oklch(0.55_0_0)]">
               {obra.fonte === "scan" ? "Scan" : "Agregador"}
             </Badge>
+            {obra.idioma && (
+              <Badge className="bg-[oklch(0.16_0_0)] text-[oklch(0.55_0_0)]">
+                {obra.idioma === "pt" ? "🇧🇷 PT" : "🇺🇸 EN"}
+              </Badge>
+            )}
           </div>
 
           {obra.sinopse && (
@@ -195,12 +202,20 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
                   <TableCell className="text-foreground">{cap.titulo || "Sem título"}</TableCell>
                   <TableCell className="text-[oklch(0.55_0_0)] text-right">{cap.paginas?.length || 0}</TableCell>
                   <TableCell className="text-right">
-                    <button
-                      onClick={() => deleteCapitulo(cap.id)}
-                      className="text-[oklch(0.55_0_0)] hover:text-destructive transition-colors p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <PreviewCapituloDialog
+                        capituloId={cap.id}
+                        obraSlug={obra.slug}
+                        numero={String(cap.numero)}
+                      />
+                      <button
+                        onClick={() => deleteCapitulo(cap.id)}
+                        className="text-[oklch(0.55_0_0)] hover:text-destructive transition-colors p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </TableCell>
                   </TableCell>
                 </TableRow>
               ))}

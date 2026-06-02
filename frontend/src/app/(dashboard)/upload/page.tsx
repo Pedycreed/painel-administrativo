@@ -12,6 +12,7 @@ interface Obra {
   titulo: string
   slug: string
   fonte: string
+  idioma?: string
 }
 
 export default function UploadPage() {
@@ -260,6 +261,60 @@ export default function UploadPage() {
               disabled={isUploading || files.length === 0 || !selectedObra || !numero}
             >
               {isUploading ? "Fazendo Upload..." : "Publicar Capítulo"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Upload ZIP */}
+      <Card className="bg-[oklch(0.12_0_0)] border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground">Upload via ZIP (Múltiplas Páginas)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-[oklch(0.55_0_0)] mb-4">
+            Faça upload de um arquivo ZIP contendo todas as páginas do capítulo. As imagens serão ordenadas automaticamente pelo nome.
+          </p>
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="text-sm text-[oklch(0.55_0_0)]">Obra</label>
+              <select
+                className="w-full bg-[oklch(0.16_0_0)] border-border text-foreground p-2 rounded"
+                value={selectedObra}
+                onChange={(e) => setSelectedObra(e.target.value)}
+              >
+                <option value="">Selecione</option>
+                {obras.map((o) => (
+                  <option key={o.id} value={o.slug}>{o.titulo}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-[oklch(0.55_0_0)]">Número do Capítulo</label>
+              <Input
+                placeholder="Ex: 1 ou 12.5"
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                className="bg-[oklch(0.16_0_0)]"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[oklch(0.55_0_0)]">Arquivo ZIP</label>
+              <Input
+                type="file"
+                accept=".zip"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    const file = e.target.files[0]
+                    // Placeholder: você implementa o upload ZIP aqui
+                    console.log('ZIP selecionado:', file.name)
+                  }
+                }}
+                className="bg-[oklch(0.16_0_0)]"
+              />
+            </div>
+            <Button className="bg-primary hover:bg-primary/80" disabled>
+              Upload ZIP (em breve)
             </Button>
           </div>
         </CardContent>

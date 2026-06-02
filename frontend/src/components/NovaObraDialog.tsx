@@ -17,6 +17,7 @@ export default function NovaObraDialog() {
   const [autor, setAutor] = useState("")
   const [status, setStatus] = useState("ongoing")
   const [fonte, setFonte] = useState<string>(fonteFixa ?? "scan")
+  const [idioma, setIdioma] = useState("pt")
   const [capaFile, setCapaFile] = useState<File | null>(null)
   const [capaPreview, setCapaPreview] = useState("")
   const [uploadingCapa, setUploadingCapa] = useState(false)
@@ -89,11 +90,12 @@ export default function NovaObraDialog() {
         capaUrl = await uploadCapa(slug)
       }
 
-      await apiPost("/obras/", { titulo, autor, slug, status, fonte, capa_url: capaUrl })
+      await apiPost("/obras/", { titulo, autor, slug, status, fonte, idioma, capa_url: capaUrl })
       setTitulo("")
       setAutor("")
       setStatus("ongoing")
       setFonte("scan")
+      setIdioma("pt")
       setCapaFile(null)
       setCapaPreview("")
       setOpen(false)
@@ -161,6 +163,17 @@ export default function NovaObraDialog() {
               </select>
             </div>
           )}
+          <div className="flex flex-col gap-1">
+            <label className="text-[oklch(0.55_0_0)] text-sm">Idioma</label>
+            <select
+              className="bg-[oklch(0.16_0_0)] border border-border text-foreground rounded-md px-3 py-2 text-sm"
+              value={idioma}
+              onChange={(e) => setIdioma(e.target.value)}
+            >
+              <option value="pt">Português</option>
+              <option value="en">English</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1">
             <label className="text-[oklch(0.55_0_0)] text-sm">Capa</label>
             <div

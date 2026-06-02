@@ -91,7 +91,13 @@ MIDDLEWARE = [
 # Em dev: localhost. Em prod: domínio do Vercel (setado via env).
 CORS_ALLOWED_ORIGINS = _env_list(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    default=['http://localhost:3000', 'http://127.0.0.1:3000'],
+    default=[
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        # BiToons (site público)
+        'https://bitoons.xyz',
+        'https://www.bitoons.xyz',
+    ],
 )
 CORS_ALLOW_CREDENTIALS = True
 

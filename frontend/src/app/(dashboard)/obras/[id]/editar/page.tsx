@@ -13,6 +13,7 @@ interface Obra {
   titulo: string
   autor: string
   status: string
+  idioma?: string
   capa_url: string | null
   sinopse: string | null
   tags: string[] | null

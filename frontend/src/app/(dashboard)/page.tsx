@@ -19,6 +19,7 @@ interface Obra {
   slug: string
   status: string
   fonte: string
+  idioma?: string
   capa_url: string | null
   capitulos: Capitulo[]
 }
