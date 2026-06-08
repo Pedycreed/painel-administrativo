@@ -5,7 +5,7 @@ import { apiGet, apiPost, apiPostForm } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { UploadCloud, CheckCircle2, AlertCircle } from "lucide-react"
+import { UploadCloud, CheckCircle2, AlertCircle, Archive } from "lucide-react"
 
 interface Obra {
   id: number
@@ -28,13 +28,26 @@ export default function UploadPage() {
   const [errorMessage, setErrorMessage] = useState("")
   const [dragActive, setDragActive] = useState(false)
 
+  // ZIP state
+  const [zipFile, setZipFile] = useState<File | null>(null)
+  const [zipObra, setZipObra] = useState<string>("")
+  const [zipNumero, setZipNumero] = useState<string>("")
+  const [zipTitulo, setZipTitulo] = useState<string>("")
+  const [zipUploading, setZipUploading] = useState(false)
+  const [zipProgress, setZipProgress] = useState(0)
+  const [zipStatus, setZipStatus] = useState<"idle" | "success" | "error">("idle")
+  const [zipError, setZipError] = useState("")
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const zipInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     apiGet<Obra[] | { results: Obra[] }>("/obras/")
       .then((data) => setObras(Array.isArray(data) ? data : (data?.results ?? [])))
       .catch((err) => console.error("Erro ao carregar obras:", err))
   }, [])
+
+  // ── Upload de imagens (individual) ──────────────────────────
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -92,7 +105,6 @@ export default function UploadPage() {
 
         const res = await apiPostForm<{ url: string }>("/upload/pagina/", fd)
         publicUrls.push(res.url)
-        // Upload representa 60% do progresso
         setUploadProgress(Math.round(((i + 1) / files.length) * 60))
       }
 
@@ -131,16 +143,82 @@ export default function UploadPage() {
     }
   }
 
+  // ── Upload via ZIP ──────────────────────────────────────────
+
+  const handleZipUpload = async () => {
+    if (!zipObra) return setZipError("Selecione uma obra.")
+    if (!zipNumero) return setZipError("Informe o número do capítulo.")
+    if (!zipFile) return setZipError("Selecione um arquivo ZIP.")
+
+    setZipUploading(true)
+    setZipStatus("idle")
+    setZipError("")
+    setZipProgress(0)
+
+    try {
+      const obra = obras.find(o => o.id.toString() === zipObra)
+      if (!obra) throw new Error("Obra não encontrada")
+
+      // 1. Envia ZIP pro backend → faz upload das imagens no R2
+      const fd = new FormData()
+      fd.append("slug", obra.slug)
+      fd.append("capitulo_numero", zipNumero)
+      fd.append("zip", zipFile)
+
+      setZipProgress(10)
+
+      const zipRes = await apiPostForm<{ uploaded: number; urls: { ordem: number; url: string }[] }>("/upload/capitulo-zip/", fd)
+
+      setZipProgress(50)
+
+      // 2. Cria o capítulo no banco
+      const capResponse = await apiPost<{ id: number }>("/capitulos/", {
+        obra: obra.id,
+        numero: parseFloat(zipNumero),
+        titulo: zipTitulo || `Capítulo ${zipNumero}`,
+        ordem: Math.floor(parseFloat(zipNumero)),
+      })
+      const capituloId = capResponse.id
+
+      setZipProgress(70)
+
+      // 3. Cria as páginas vinculadas com as URLs retornadas
+      for (let i = 0; i < zipRes.urls.length; i++) {
+        await apiPost("/paginas/", {
+          capitulo: capituloId,
+          imagem_url: zipRes.urls[i].url,
+          ordem: zipRes.urls[i].ordem + 1,
+          width: 0,
+          height: 0,
+        })
+        setZipProgress(70 + Math.round(((i + 1) / zipRes.urls.length) * 30))
+      }
+
+      setZipStatus("success")
+      setZipFile(null)
+      setZipNumero("")
+      setZipTitulo("")
+      if (zipInputRef.current) zipInputRef.current.value = ""
+    } catch (error) {
+      console.error(error)
+      setZipStatus("error")
+      setZipError(error instanceof Error ? error.message : "Ocorreu um erro durante o upload do ZIP.")
+    } finally {
+      setZipUploading(false)
+    }
+  }
+
   return (
-    <div className="p-6 max-w-4xl mx-auto min-h-screen">
+    <div className="p-6 max-w-4xl mx-auto min-h-screen space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Upload de Capítulo</h1>
         <p className="text-[oklch(0.55_0_0)] text-sm">Faça upload de páginas diretamente para a nuvem.</p>
       </div>
 
+      {/* ── Upload de imagens ─────────────────────────────── */}
       <Card className="bg-[oklch(0.12_0_0)] border-border text-foreground">
         <CardHeader>
-          <CardTitle className="text-lg">Informações do Capítulo</CardTitle>
+          <CardTitle className="text-lg">Upload de Imagens</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -266,55 +344,128 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
-      {/* Upload ZIP */}
-      <Card className="bg-[oklch(0.12_0_0)] border-border">
+      {/* ── Upload via ZIP ────────────────────────────────── */}
+      <Card className="bg-[oklch(0.12_0_0)] border-border text-foreground">
         <CardHeader>
-          <CardTitle className="text-foreground">Upload via ZIP (Múltiplas Páginas)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Archive className="w-5 h-5" />
+            Upload via ZIP
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-[oklch(0.55_0_0)] mb-4">
-            Faça upload de um arquivo ZIP contendo todas as páginas do capítulo. As imagens serão ordenadas automaticamente pelo nome.
+        <CardContent className="space-y-4">
+          <p className="text-sm text-[oklch(0.55_0_0)]">
+            Envie um arquivo ZIP com todas as páginas do capítulo. As imagens serão ordenadas automaticamente pelo nome.
           </p>
-          <div className="flex flex-col gap-4">
-            <div>
-              <label className="text-sm text-[oklch(0.55_0_0)]">Obra</label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Obra</label>
               <select
-                className="w-full bg-[oklch(0.16_0_0)] border-border text-foreground p-2 rounded"
-                value={selectedObra}
-                onChange={(e) => setSelectedObra(e.target.value)}
+                className="w-full bg-[oklch(0.16_0_0)] border border-border rounded-md px-3 py-2"
+                value={zipObra}
+                onChange={e => setZipObra(e.target.value)}
+                disabled={zipUploading}
               >
-                <option value="">Selecione</option>
-                {obras.map((o) => (
-                  <option key={o.id} value={o.slug}>{o.titulo}</option>
+                <option value="">Selecione uma obra...</option>
+                {obras.map(o => (
+                  <option key={o.id} value={o.id}>{o.titulo} ({o.fonte})</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-sm text-[oklch(0.55_0_0)]">Número do Capítulo</label>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Número do Cap.</label>
               <Input
-                placeholder="Ex: 1 ou 12.5"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
-                className="bg-[oklch(0.16_0_0)]"
+                type="number"
+                step="0.1"
+                placeholder="Ex: 1 ou 1.5"
+                className="bg-[oklch(0.16_0_0)] border-border"
+                value={zipNumero}
+                onChange={e => setZipNumero(e.target.value)}
+                disabled={zipUploading}
               />
             </div>
-            <div>
-              <label className="text-sm text-[oklch(0.55_0_0)]">Arquivo ZIP</label>
-              <Input
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Título (Opcional)</label>
+            <Input
+              placeholder="Ex: O Despertar"
+              className="bg-[oklch(0.16_0_0)] border-border"
+              value={zipTitulo}
+              onChange={e => setZipTitulo(e.target.value)}
+              disabled={zipUploading}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Arquivo ZIP</label>
+            <div
+              className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors cursor-pointer ${
+                zipFile
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-[oklch(0.16_0_0)] hover:bg-[oklch(0.18_0_0)]"
+              }`}
+              onClick={() => zipInputRef.current?.click()}
+            >
+              <Archive className="w-8 h-8 text-[oklch(0.55_0_0)] mb-2" />
+              {zipFile ? (
+                <p className="text-sm font-medium text-primary">{zipFile.name}</p>
+              ) : (
+                <p className="text-sm text-[oklch(0.55_0_0)]">Clique para selecionar um arquivo .zip</p>
+              )}
+              <input
+                ref={zipInputRef}
                 type="file"
                 accept=".zip"
+                className="hidden"
                 onChange={(e) => {
                   if (e.target.files?.[0]) {
-                    const file = e.target.files[0]
-                    // Placeholder: você implementa o upload ZIP aqui
-                    console.log('ZIP selecionado:', file.name)
+                    setZipFile(e.target.files[0])
+                    setZipStatus("idle")
+                    setZipError("")
                   }
                 }}
-                className="bg-[oklch(0.16_0_0)]"
+                disabled={zipUploading}
               />
             </div>
-            <Button className="bg-primary hover:bg-primary/80" disabled>
-              Upload ZIP (em breve)
+          </div>
+
+          {zipStatus === "error" && (
+            <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-start gap-2 text-sm">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>{zipError}</p>
+            </div>
+          )}
+
+          {zipStatus === "success" && (
+            <div className="bg-emerald-500/10 text-emerald-500 p-3 rounded-md flex items-start gap-2 text-sm">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>Upload via ZIP concluído! Capítulo publicado com sucesso.</p>
+            </div>
+          )}
+
+          {zipUploading && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-[oklch(0.55_0_0)]">
+                <span>Processando ZIP e enviando...</span>
+                <span>{zipProgress}%</span>
+              </div>
+              <div className="w-full bg-[oklch(0.16_0_0)] rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${zipProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2">
+            <Button
+              className="w-full bg-primary hover:bg-primary/80"
+              onClick={handleZipUpload}
+              disabled={zipUploading || !zipFile || !zipObra || !zipNumero}
+            >
+              {zipUploading ? "Enviando ZIP..." : "Publicar via ZIP"}
             </Button>
           </div>
         </CardContent>

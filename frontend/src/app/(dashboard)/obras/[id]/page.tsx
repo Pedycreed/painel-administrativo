@@ -216,7 +216,6 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
                       </button>
                     </div>
                   </TableCell>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

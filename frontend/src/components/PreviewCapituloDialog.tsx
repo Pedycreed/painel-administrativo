@@ -45,7 +45,7 @@ export default function PreviewCapituloDialog({ capituloId, obraSlug, numero }: 
       setOpen(o)
       if (o) loadPaginas()
     }}>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button variant="ghost" size="sm" className="text-[oklch(0.55_0_0)] hover:text-foreground">
           <Eye className="w-4 h-4" />
         </Button>
