@@ -85,24 +85,24 @@ export default function ScanPage() {
   return (
     <div className="min-h-screen">
       {/* Top bar */}
-      <div className="border-b border-border px-6 py-3">
-        <div className="flex items-center gap-4 max-w-6xl mx-auto">
+      <div className="border-b border-border px-4 sm:px-6 py-3">
+        <div className="flex items-center gap-3 sm:gap-4 max-w-6xl mx-auto">
           <SearchBar />
           <NovaObraDialog />
         </div>
       </div>
 
-      <div className="px-6 py-6 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
         {/* Welcome */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Scan</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Scan</h1>
             <p className="text-[oklch(0.55_0_0)] text-sm mt-1">Obras originais traduzidas pela equipe</p>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-[oklch(0.12_0_0)] border-border">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -149,7 +149,7 @@ export default function ScanPage() {
           {obras.length === 0 ? (
             <p className="text-[oklch(0.55_0_0)] text-center py-10">Nenhuma obra da Scan cadastrada.</p>
           ) : (
-            <div className="grid grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {obras.map((obra) => (
                 <Link key={obra.id} href={`/obras/${obra.slug}`} className="block group">
                   <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-hidden transition-colors hover:border-primary/30">

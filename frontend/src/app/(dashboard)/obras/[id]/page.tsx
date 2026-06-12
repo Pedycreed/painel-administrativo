@@ -86,12 +86,12 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
-    return <div className="px-6 py-8"><p className="text-[oklch(0.55_0_0)]">Carregando...</p></div>
+    return <div className="px-4 sm:px-6 py-6 sm:py-8"><p className="text-[oklch(0.55_0_0)]">Carregando...</p></div>
   }
 
   if (error || !obra) {
     return (
-      <div className="px-6 py-8">
+      <div className="px-4 sm:px-6 py-6 sm:py-8">
         <Link href="/" className="text-[oklch(0.55_0_0)] text-sm hover:text-foreground mb-6 inline-block">
           <ArrowLeft className="w-4 h-4 inline mr-1" />Obras
         </Link>
@@ -101,14 +101,14 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <div className="px-6 py-6">
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
       <Link href="/" className="text-[oklch(0.55_0_0)] text-sm hover:text-foreground mb-6 inline-flex items-center gap-1">
         <ArrowLeft className="w-4 h-4" />Obras
       </Link>
 
       {/* Header da obra */}
-      <div className="flex items-start gap-6 mb-8">
-        <div className="w-48 h-72 bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-hidden shrink-0">
+      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="w-32 h-48 sm:w-48 sm:h-72 bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-hidden shrink-0">
           {obra.capa_url ? (
             <img src={obra.capa_url} alt={obra.titulo} className="w-full h-full object-cover" />
           ) : (
@@ -121,9 +121,9 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
         </div>
 
         <div className="flex-1 pt-2">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-semibold text-foreground">{obra.titulo}</h1>
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">{obra.titulo}</h1>
+            <div className="flex flex-wrap gap-2">
               <EditarObraDialog obra={obra} onUpdated={() => fetchObra(obra.slug)} />
               <Link
                 href={`/obras/${obra.slug}/editar`}
@@ -185,7 +185,7 @@ export default function ObraPage({ params }: { params: Promise<{ id: string }> }
       </div>
 
       {obra.capitulos && obra.capitulos.length > 0 ? (
-        <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-hidden">
+        <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-border">

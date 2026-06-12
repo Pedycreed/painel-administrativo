@@ -209,9 +209,9 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto min-h-screen space-y-6">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto min-h-screen space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Upload de Capítulo</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Upload de Capítulo</h1>
         <p className="text-[oklch(0.55_0_0)] text-sm">Faça upload de páginas diretamente para a nuvem.</p>
       </div>
 
@@ -221,7 +221,7 @@ export default function UploadPage() {
           <CardTitle className="text-lg">Upload de Imagens</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Obra</label>
               <select
@@ -357,7 +357,7 @@ export default function UploadPage() {
             Envie um arquivo ZIP com todas as páginas do capítulo. As imagens serão ordenadas automaticamente pelo nome.
           </p>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Obra</label>
               <select

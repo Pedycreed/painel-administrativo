@@ -58,11 +58,11 @@ export default function UsuariosPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="px-6 py-6 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Usuários</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Usuários</h1>
             <p className="text-[oklch(0.55_0_0)] text-sm mt-1">
               {requester?.is_superuser
                 ? "Gestão completa: você pode criar e editar usuários de qualquer time."
@@ -80,7 +80,7 @@ export default function UsuariosPage() {
         ) : usuarios.length === 0 ? (
           <p className="text-[oklch(0.55_0_0)] text-center py-10">Nenhum usuário cadastrado.</p>
         ) : (
-          <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-hidden">
+          <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border">

@@ -46,10 +46,10 @@ export default function CapitulosPage() {
   }, [])
 
   return (
-    <div className="px-6 py-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="px-4 sm:px-6 py-4 sm:py-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Capítulos Recentes</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Capítulos Recentes</h1>
           <p className="text-[oklch(0.55_0_0)] text-sm mt-1">Todos os capítulos cadastrados</p>
         </div>
       </div>
@@ -63,7 +63,7 @@ export default function CapitulosPage() {
           <p className="text-[oklch(0.55_0_0)]">Nenhum capítulo cadastrado.</p>
         </div>
       ) : (
-        <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-hidden">
+        <div className="bg-[oklch(0.12_0_0)] border border-border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-border">
