@@ -129,6 +129,28 @@ class PaginaViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Página deve pertencer a uma obra do seu time.')
         serializer.save()
 
+    @action(detail=False, methods=['post'], url_path='reorder')
+    def reorder(self, request):
+        """
+        POST /api/paginas/reorder/
+        Body: { "pages": [{"id": 1, "ordem": 1}, {"id": 2, "ordem": 2}, ...] }
+        """
+        pages = request.data.get('pages', [])
+        if not pages:
+            return Response({'error': 'Envie "pages" com id e ordem.'}, status=400)
+
+        ids = [p['id'] for p in pages]
+        objs = Pagina.objects.filter(id__in=ids)
+        if objs.count() != len(ids):
+            return Response({'error': 'Uma ou mais páginas não encontradas.'}, status=404)
+
+        ordem_map = {p['id']: p['ordem'] for p in pages}
+        for obj in objs:
+            obj.ordem = ordem_map[obj.id]
+        Pagina.objects.bulk_update(objs, ['ordem'])
+
+        return Response({'ok': True, 'updated': len(objs)})
+
 _CONTENT_TYPE_TO_EXT = {
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
