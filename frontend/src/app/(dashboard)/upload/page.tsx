@@ -51,7 +51,9 @@ export default function UploadPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const selectedFiles = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name))
+      const selectedFiles = Array.from(e.target.files).sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+      )
       setFiles(selectedFiles)
     }
   }
@@ -72,7 +74,7 @@ export default function UploadPage() {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFiles = Array.from(e.dataTransfer.files)
         .filter(f => f.type.startsWith("image/"))
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
       if (droppedFiles.length > 0) {
         setFiles(droppedFiles)
       }

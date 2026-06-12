@@ -431,9 +431,17 @@ def upload_capitulo_zip(request):
         return Response({'error': 'slug, capitulo_numero e zip são obrigatórios.'}, status=400)
 
     try:
+        import re as _re
+
+        def _natural_key(s: str):
+            return [int(c) if c.isdigit() else c.lower() for c in _re.split(r'(\d+)', s)]
+
         # Validar ZIP
         zip_file = zipfile.ZipFile(io.BytesIO(arquivo_zip.read()))
-        imagens = sorted([f for f in zip_file.namelist() if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp'))])
+        imagens = sorted(
+            [f for f in zip_file.namelist() if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp'))],
+            key=_natural_key,
+        )
 
         if not imagens:
             return Response({'error': 'ZIP não contém imagens válidas.'}, status=400)
