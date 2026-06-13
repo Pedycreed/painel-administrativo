@@ -66,14 +66,14 @@ function SortablePage({ pagina, index }: { pagina: Pagina; index: number }) {
           loading="lazy"
         />
       </div>
-      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-1 right-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <button
           {...attributes}
           {...listeners}
-          className="bg-black/70 text-white p-1.5 rounded cursor-grab active:cursor-grabbing touch-none"
+          className="bg-black/70 text-white p-2 sm:p-1.5 rounded cursor-grab active:cursor-grabbing touch-none"
           title="Arrastar para reordenar"
         >
-          <GripVertical className="w-3.5 h-3.5" />
+          <GripVertical className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
       <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
@@ -153,7 +153,7 @@ export default function PreviewCapituloDialog({ capituloId, obraSlug, numero }: 
           <Eye className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-border text-foreground max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground max-w-[95vw] sm:max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between pr-8">
             <DialogTitle className="text-foreground">
@@ -198,7 +198,7 @@ export default function PreviewCapituloDialog({ capituloId, obraSlug, numero }: 
         {!loading && !error && paginas.length > 0 && (
           <>
             <p className="text-[oklch(0.55_0_0)] text-xs mb-2">
-              Arraste as páginas para reordenar. Passe o mouse sobre a imagem para ver o ícone de arrastar.
+              Toque e segure o ícone ⋮⋮ para arrastar e reordenar as páginas.
             </p>
             <DndContext
               sensors={sensors}
