@@ -15,12 +15,17 @@ class Obra(models.Model):
         ('pt', 'Português'),
         ('en', 'English'),
     ]
+    TIPO_CHOICES = [
+        ('manga', 'Mangá/Manhwa'),
+        ('novel', 'Light Novel'),
+    ]
     titulo = models.CharField(max_length=255, db_index=True)
     autor = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ongoing')
     fonte = models.CharField(max_length=20, choices=FONTE_CHOICES, default='scan')
     idioma = models.CharField(max_length=2, choices=IDIOMA_CHOICES, default='pt', db_index=True)
+    tipo_obra = models.CharField(max_length=10, choices=TIPO_CHOICES, default='manga')
     capa_url = models.CharField(max_length=500, blank=True)
     sinopse = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)

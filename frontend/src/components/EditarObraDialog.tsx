@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { apiPut } from "@/lib/api"
 
 interface EditarObraDialogProps {
-  obra: { id: number; titulo: string; autor: string; status: string; slug: string; fonte?: string; idioma?: string }
+  obra: { id: number; titulo: string; autor: string; status: string; slug: string; fonte?: string; idioma?: string; tipo_obra?: string }
   onUpdated: () => void
 }
 
@@ -17,6 +17,7 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
   const [autor, setAutor] = useState(obra.autor)
   const [status, setStatus] = useState(obra.status)
   const [idioma, setIdioma] = useState(obra.idioma || "pt")
+  const [tipoObra, setTipoObra] = useState(obra.tipo_obra || "manga")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -41,6 +42,7 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
         status,
         fonte: obra.fonte || "scan",
         idioma,
+        tipo_obra: tipoObra,
       })
       setOpen(false)
       onUpdated()
@@ -58,6 +60,7 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
         setAutor(obra.autor)
         setStatus(obra.status)
         setIdioma(obra.idioma || "pt")
+        setTipoObra(obra.tipo_obra || "manga")
       }
       setOpen(o)
     }}>
@@ -110,6 +113,17 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
               >
                 <option value="pt">Português</option>
                 <option value="en">English</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[oklch(0.55_0_0)] text-sm">Tipo</label>
+              <select
+                className="bg-[oklch(0.16_0_0)] border border-border text-foreground rounded-md px-3 py-2 text-sm"
+                value={tipoObra}
+                onChange={(e) => setTipoObra(e.target.value)}
+              >
+                <option value="manga">Mangá/Manhwa</option>
+                <option value="novel">Light Novel</option>
               </select>
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}

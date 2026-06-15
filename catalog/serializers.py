@@ -28,7 +28,7 @@ class ObraSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Obra
-        fields = ['id', 'titulo', 'autor', 'slug', 'status', 'fonte', 'idioma', 'capa_url', 'sinopse', 'tags', 'created_at', 'capitulos']
+        fields = ['id', 'titulo', 'autor', 'slug', 'status', 'fonte', 'idioma', 'tipo_obra', 'capa_url', 'sinopse', 'tags', 'created_at', 'capitulos']
 
 
 # ── Serializers públicos (site BiToons) ──────────────────────────
@@ -50,7 +50,7 @@ class ObraPublicListSerializer(serializers.ModelSerializer):
         model = Obra
         fields = [
             'id', 'titulo', 'autor', 'slug', 'status',
-            'capa_url', 'tags', 'idioma',
+            'capa_url', 'tags', 'idioma', 'tipo_obra',
             'total_capitulos', 'ultimo_capitulo_numero', 'ultimo_capitulo_data',
         ]
 
@@ -75,7 +75,7 @@ class ObraPublicDetailSerializer(serializers.ModelSerializer):
         model = Obra
         fields = [
             'id', 'titulo', 'autor', 'slug', 'status',
-            'capa_url', 'sinopse', 'tags', 'idioma',
+            'capa_url', 'sinopse', 'tags', 'idioma', 'tipo_obra',
             'created_at', 'total_capitulos', 'capitulos',
         ]
 

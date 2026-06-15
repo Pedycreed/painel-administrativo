@@ -18,6 +18,7 @@ export default function NovaObraDialog() {
   const [status, setStatus] = useState("ongoing")
   const [fonte, setFonte] = useState<string>(fonteFixa ?? "scan")
   const [idioma, setIdioma] = useState("pt")
+  const [tipoObra, setTipoObra] = useState("manga")
   const [capaFile, setCapaFile] = useState<File | null>(null)
   const [capaPreview, setCapaPreview] = useState("")
   const [uploadingCapa, setUploadingCapa] = useState(false)
@@ -90,12 +91,13 @@ export default function NovaObraDialog() {
         capaUrl = await uploadCapa(slug)
       }
 
-      await apiPost("/obras/", { titulo, autor, slug, status, fonte, idioma, capa_url: capaUrl })
+      await apiPost("/obras/", { titulo, autor, slug, status, fonte, idioma, tipo_obra: tipoObra, capa_url: capaUrl })
       setTitulo("")
       setAutor("")
       setStatus("ongoing")
       setFonte("scan")
       setIdioma("pt")
+      setTipoObra("manga")
       setCapaFile(null)
       setCapaPreview("")
       setOpen(false)
@@ -172,6 +174,17 @@ export default function NovaObraDialog() {
             >
               <option value="pt">Português</option>
               <option value="en">English</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[oklch(0.55_0_0)] text-sm">Tipo</label>
+            <select
+              className="bg-[oklch(0.16_0_0)] border border-border text-foreground rounded-md px-3 py-2 text-sm"
+              value={tipoObra}
+              onChange={(e) => setTipoObra(e.target.value)}
+            >
+              <option value="manga">Mangá/Manhwa</option>
+              <option value="novel">Light Novel</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">

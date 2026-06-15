@@ -340,10 +340,11 @@ from rest_framework.decorators import action
 
 class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API pública para o site BiToons.
-    - GET /api/public/obras/?idioma=pt  → lista obras do idioma
-    - GET /api/public/obras/{slug}/     → detalhe completo
-    - GET /api/public/obras/{slug}/capitulo/{numero}/ → capítulo com páginas (leitor)
+    API pública para sites BiToons/WindScan.
+    - GET /api/public/obras/?idioma=pt&fonte=agregador  → lista obras
+    - GET /api/public/obras/?order=popular              → por favoritos
+    - GET /api/public/obras/{slug}/                     → detalhe completo
+    - GET /api/public/obras/{slug}/capitulo/{numero}/   → capítulo com páginas
     """
     permission_classes = [AllowAny]
     lookup_field = 'slug'
@@ -357,9 +358,24 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = Obra.objects.all()
+
         idioma = self.request.query_params.get('idioma')
         if idioma in ('pt', 'en'):
             qs = qs.filter(idioma=idioma)
+
+        fonte = self.request.query_params.get('fonte')
+        if fonte in ('scan', 'agregador'):
+            qs = qs.filter(fonte=fonte)
+
+        order = self.request.query_params.get('order', 'recent')
+        if order == 'popular':
+            from django.db.models import Count
+            qs = qs.annotate(fav_count=Count('favoritos')).order_by('-fav_count')
+        elif order == 'title':
+            qs = qs.order_by('titulo')
+        else:
+            qs = qs.order_by('-created_at')
+
         return qs.prefetch_related('capitulos')
 
     @action(detail=True, url_path=r'capitulo/(?P<numero>[\d.]+)')
