@@ -5,7 +5,7 @@ import { apiGet, apiPost, apiPostForm } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { UploadCloud, CheckCircle2, AlertCircle, Archive } from "lucide-react"
+import { UploadCloud, CheckCircle2, AlertCircle, Archive, BookOpen, FileText } from "lucide-react"
 
 interface Obra {
   id: number
@@ -40,6 +40,19 @@ export default function UploadPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const zipInputRef = useRef<HTMLInputElement>(null)
+  const novelFileRef = useRef<HTMLInputElement>(null)
+
+  // Novel state
+  const [novelObra, setNovelObra] = useState<string>("")
+  const [novelNumero, setNovelNumero] = useState<string>("")
+  const [novelTitulo, setNovelTitulo] = useState<string>("")
+  const [novelTexto, setNovelTexto] = useState<string>("")
+  const [novelFile, setNovelFile] = useState<File | null>(null)
+  const [novelMode, setNovelMode] = useState<"editor" | "file">("editor")
+  const [novelUploading, setNovelUploading] = useState(false)
+  const [novelProgress, setNovelProgress] = useState(0)
+  const [novelStatus, setNovelStatus] = useState<"idle" | "success" | "error">("idle")
+  const [novelError, setNovelError] = useState("")
 
   useEffect(() => {
     apiGet<Obra[] | { results: Obra[] }>("/obras/")
@@ -207,6 +220,55 @@ export default function UploadPage() {
       setZipError(error instanceof Error ? error.message : "Ocorreu um erro durante o upload do ZIP.")
     } finally {
       setZipUploading(false)
+    }
+  }
+
+  // ── Upload de Novel ──────────────────────────────────────
+
+  const handleNovelUpload = async () => {
+    if (!novelObra) return setNovelError("Selecione uma obra.")
+    if (!novelNumero) return setNovelError("Informe o número do capítulo.")
+
+    let conteudo = novelTexto
+
+    if (novelMode === "file" && novelFile) {
+      conteudo = await novelFile.text()
+    }
+
+    if (!conteudo.trim()) return setNovelError("Escreva ou carregue o conteúdo da novel.")
+
+    setNovelUploading(true)
+    setNovelStatus("idle")
+    setNovelError("")
+    setNovelProgress(0)
+
+    try {
+      const obra = obras.find(o => o.id.toString() === novelObra)
+      if (!obra) throw new Error("Obra não encontrada")
+
+      setNovelProgress(30)
+
+      await apiPost("/capitulos/", {
+        obra: obra.id,
+        numero: parseFloat(novelNumero),
+        titulo: novelTitulo || `Capítulo ${novelNumero}`,
+        ordem: Math.floor(parseFloat(novelNumero)),
+        conteudo: conteudo,
+      })
+
+      setNovelProgress(100)
+      setNovelStatus("success")
+      setNovelTexto("")
+      setNovelNumero("")
+      setNovelTitulo("")
+      setNovelFile(null)
+      if (novelFileRef.current) novelFileRef.current.value = ""
+    } catch (error) {
+      console.error(error)
+      setNovelStatus("error")
+      setNovelError(error instanceof Error ? error.message : "Ocorreu um erro durante o upload.")
+    } finally {
+      setNovelUploading(false)
     }
   }
 
@@ -468,6 +530,167 @@ export default function UploadPage() {
               disabled={zipUploading || !zipFile || !zipObra || !zipNumero}
             >
               {zipUploading ? "Enviando ZIP..." : "Publicar via ZIP"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      {/* ── Upload de Novel ──────────────────────────────── */}
+      <Card className="bg-[oklch(0.12_0_0)] border-border text-foreground">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BookOpen className="w-5 h-5" />
+            Upload de Novel
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-[oklch(0.55_0_0)]">
+            Publique capítulos de light novel. Escreva direto no editor ou carregue um arquivo .txt.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Obra</label>
+              <select
+                className="w-full bg-[oklch(0.16_0_0)] border border-border rounded-md px-3 py-2"
+                value={novelObra}
+                onChange={e => setNovelObra(e.target.value)}
+                disabled={novelUploading}
+              >
+                <option value="">Selecione uma obra...</option>
+                {obras.map(o => (
+                  <option key={o.id} value={o.id}>{o.titulo} ({o.fonte})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Número do Cap.</label>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="Ex: 1 ou 1.5"
+                className="bg-[oklch(0.16_0_0)] border-border"
+                value={novelNumero}
+                onChange={e => setNovelNumero(e.target.value)}
+                disabled={novelUploading}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Título (Opcional)</label>
+            <Input
+              placeholder="Ex: O Despertar"
+              className="bg-[oklch(0.16_0_0)] border-border"
+              value={novelTitulo}
+              onChange={e => setNovelTitulo(e.target.value)}
+              disabled={novelUploading}
+            />
+          </div>
+
+          {/* Mode Toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setNovelMode("editor")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                novelMode === "editor" ? "bg-primary text-primary-foreground" : "bg-[oklch(0.16_0_0)] text-[oklch(0.55_0_0)] hover:bg-[oklch(0.18_0_0)]"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Editor de Texto
+            </button>
+            <button
+              onClick={() => setNovelMode("file")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                novelMode === "file" ? "bg-primary text-primary-foreground" : "bg-[oklch(0.16_0_0)] text-[oklch(0.55_0_0)] hover:bg-[oklch(0.18_0_0)]"
+              }`}
+            >
+              <UploadCloud className="w-4 h-4" />
+              Carregar Arquivo
+            </button>
+          </div>
+
+          {/* Editor Mode */}
+          {novelMode === "editor" && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Conteúdo do Capítulo</label>
+              <textarea
+                className="w-full min-h-[300px] bg-[oklch(0.16_0_0)] border border-border rounded-md px-3 py-2 text-sm font-['Literata',serif] leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="Cole ou escreva o texto da novel aqui..."
+                value={novelTexto}
+                onChange={e => setNovelTexto(e.target.value)}
+                disabled={novelUploading}
+              />
+              <p className="text-xs text-[oklch(0.55_0_0)]">{novelTexto.length} caracteres</p>
+            </div>
+          )}
+
+          {/* File Mode */}
+          {novelMode === "file" && (
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-[oklch(0.55_0_0)]">Arquivo de Texto</label>
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors cursor-pointer ${
+                  novelFile ? "border-primary bg-primary/5" : "border-border bg-[oklch(0.16_0_0)] hover:bg-[oklch(0.18_0_0)]"
+                }`}
+                onClick={() => novelFileRef.current?.click()}
+              >
+                <FileText className="w-8 h-8 text-[oklch(0.55_0_0)] mb-2" />
+                {novelFile ? (
+                  <p className="text-sm font-medium text-primary">{novelFile.name}</p>
+                ) : (
+                  <p className="text-sm text-[oklch(0.55_0_0)]">Clique para selecionar um arquivo .txt</p>
+                )}
+                <input
+                  ref={novelFileRef}
+                  type="file"
+                  accept=".txt,.md,.html"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setNovelFile(e.target.files[0])
+                      setNovelStatus("idle")
+                      setNovelError("")
+                    }
+                  }}
+                  disabled={novelUploading}
+                />
+              </div>
+            </div>
+          )}
+
+          {novelStatus === "error" && (
+            <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-start gap-2 text-sm">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>{novelError}</p>
+            </div>
+          )}
+
+          {novelStatus === "success" && (
+            <div className="bg-emerald-500/10 text-emerald-500 p-3 rounded-md flex items-start gap-2 text-sm">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>Capítulo da novel publicado com sucesso!</p>
+            </div>
+          )}
+
+          {novelUploading && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-[oklch(0.55_0_0)]">
+                <span>Salvando capítulo...</span>
+                <span>{novelProgress}%</span>
+              </div>
+              <div className="w-full bg-[oklch(0.16_0_0)] rounded-full h-2 overflow-hidden">
+                <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${novelProgress}%` }} />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2">
+            <Button
+              className="w-full bg-primary hover:bg-primary/80"
+              onClick={handleNovelUpload}
+              disabled={novelUploading || !novelObra || !novelNumero || (novelMode === "editor" ? !novelTexto.trim() : !novelFile)}
+            >
+              {novelUploading ? "Publicando..." : "Publicar Novel"}
             </Button>
           </div>
         </CardContent>
