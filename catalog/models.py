@@ -16,7 +16,9 @@ class Obra(models.Model):
         ('en', 'English'),
     ]
     TIPO_CHOICES = [
-        ('manga', 'Mangá/Manhwa'),
+        ('manga', 'Mangá'),
+        ('manhwa', 'Manhwa'),
+        ('manhua', 'Manhua'),
         ('novel', 'Light Novel'),
     ]
     titulo = models.CharField(max_length=255, db_index=True)

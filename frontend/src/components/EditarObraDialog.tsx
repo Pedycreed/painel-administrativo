@@ -122,7 +122,9 @@ export default function EditarObraDialog({ obra, onUpdated }: EditarObraDialogPr
                 value={tipoObra}
                 onChange={(e) => setTipoObra(e.target.value)}
               >
-                <option value="manga">Mangá/Manhwa</option>
+                <option value="manga">Mangá</option>
+                <option value="manhwa">Manhwa</option>
+                <option value="manhua">Manhua</option>
                 <option value="novel">Light Novel</option>
               </select>
             </div>
