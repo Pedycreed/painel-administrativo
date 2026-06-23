@@ -40,6 +40,7 @@ class Capitulo(models.Model):
     obra = models.ForeignKey(Obra, on_delete=models.CASCADE, related_name='capitulos')
     numero = models.DecimalField(max_digits=6, decimal_places=1)
     titulo = models.CharField(max_length=255, blank=True)
+    conteudo = models.TextField(blank=True, default='')
     data_publicacao = models.DateField(null=True, blank=True)
     ordem = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

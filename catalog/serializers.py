@@ -37,7 +37,7 @@ class CapituloPublicoSerializer(serializers.ModelSerializer):
     """Serializer leve para capítulos no detalhe público."""
     class Meta:
         model = Capitulo
-        fields = ['id', 'numero', 'titulo', 'data_publicacao', 'ordem']
+        fields = ['id', 'numero', 'titulo', 'data_publicacao', 'ordem', 'conteudo']
 
 
 class ObraPublicListSerializer(serializers.ModelSerializer):
@@ -96,7 +96,7 @@ class CapituloLeitorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Capitulo
-        fields = ['id', 'numero', 'titulo', 'data_publicacao', 'paginas']
+        fields = ['id', 'numero', 'titulo', 'data_publicacao', 'paginas', 'conteudo']
 
 
 class FavoritoSerializer(serializers.ModelSerializer):
