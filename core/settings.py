@@ -97,6 +97,11 @@ CORS_ALLOWED_ORIGINS = _env_list(
         # BiToons (site público)
         'https://bitoons.xyz',
         'https://www.bitoons.xyz',
+        # WindScan (site público)
+        'https://windscan.xyz',
+        'https://www.windscan.xyz',
+        # Vercel deploys
+        'https://painel-administrativo-omega.vercel.app',
     ],
 )
 CORS_ALLOW_CREDENTIALS = True
