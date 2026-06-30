@@ -146,7 +146,7 @@ class AtualizarUsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['email', 'first_name', 'last_name', 'avatar_url']
+        fields = ['username', 'email', 'first_name', 'last_name', 'avatar_url']
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
