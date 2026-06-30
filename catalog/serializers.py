@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Obra, Capitulo, Pagina, Favorito, HistoricoLeitura
+from .models import Obra, Capitulo, Pagina, Favorito, HistoricoLeitura, ListaLeitura
 
 class PaginaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -139,4 +139,22 @@ class HistoricoSerializer(serializers.ModelSerializer):
         )
         # Força update do lido_em (auto_now)
         obj.save(update_fields=['lido_em'])
+        return obj
+
+
+class ListaLeituraSerializer(serializers.ModelSerializer):
+    obra = ObraPublicListSerializer(read_only=True)
+    obra_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = ListaLeitura
+        fields = ['id', 'obra', 'obra_id', 'tipo', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['usuario'] = self.context['request'].user
+        obj, created = ListaLeitura.objects.update_or_create(
+            usuario=validated_data['usuario'],
+            obra_id=validated_data['obra_id'],
+            defaults={'tipo': validated_data.get('tipo', 'reading')},
+        )
         return obj

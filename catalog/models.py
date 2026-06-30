@@ -96,3 +96,24 @@ class HistoricoLeitura(models.Model):
 
     def __str__(self):
         return f'{self.usuario} → {self.capitulo}'
+
+
+class ListaLeitura(models.Model):
+    TIPO_CHOICES = [
+        ('reading', 'Lendo'),
+        ('plan', 'Planejado'),
+        ('completed', 'Concluído'),
+    ]
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lista_leitura'
+    )
+    obra = models.ForeignKey(Obra, on_delete=models.CASCADE, related_name='listas')
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='reading')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario', 'obra')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.usuario} [{self.tipo}] {self.obra}'

@@ -10,6 +10,7 @@ from catalog.views import (
     upload_imagem, upload_pagina, upload_capitulo_zip,
     ScanObraViewSet, AgregadorObraViewSet,
     PublicObraViewSet, FavoritoViewSet, HistoricoViewSet,
+    ListaLeituraViewSet, generos_favoritos,
 )
 from accounts.views import (
     RegistroView,
@@ -35,6 +36,7 @@ public_router.register(r'obras', PublicObraViewSet, basename='public-obra')
 user_router = DefaultRouter()
 user_router.register(r'favoritos', FavoritoViewSet, basename='favorito')
 user_router.register(r'historico', HistoricoViewSet, basename='historico')
+user_router.register(r'lista-leitura', ListaLeituraViewSet, basename='lista-leitura')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -60,8 +62,9 @@ urlpatterns = [
     # API pública (BiToons)
     path('api/public/', include(public_router.urls)),
 
-    # API autenticada (favoritos + histórico)
+    # API autenticada (favoritos + histórico + lista)
     path('api/', include(user_router.urls)),
+    path('api/generos-favoritos/', generos_favoritos, name='generos-favoritos'),
 
     # Rotas separadas por fonte (Scan)
     path('api/scan/', include([
