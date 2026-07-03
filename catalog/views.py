@@ -15,6 +15,146 @@ from .serializers import (
 )
 
 
+# ── ViewSets de gestão (admin / painel) ─────────────────────────────────────
+
+class ObraViewSet(viewsets.ModelViewSet):
+    """
+    CRUD completo de obras (uso interno/admin).
+    GET/POST  /api/obras/
+    GET/PUT/PATCH/DELETE  /api/obras/{slug}/
+    """
+    serializer_class = ObraSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'slug'
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['^titulo', '^autor']
+
+    def get_queryset(self):
+        qs = Obra.objects.all().order_by('-created_at')
+        fonte = (
+            self.kwargs.get('fonte')
+            or self.request.query_params.get('fonte')
+        )
+        if fonte in ('scan', 'agregador'):
+            qs = qs.filter(fonte=fonte)
+        return qs
+
+
+class ScanObraViewSet(ObraViewSet):
+    """Obras filtradas por fonte='scan' (/api/scan/obras/)."""
+
+    def get_queryset(self):
+        return Obra.objects.filter(fonte='scan').order_by('-created_at')
+
+
+class AgregadorObraViewSet(ObraViewSet):
+    """Obras filtradas por fonte='agregador' (/api/agregador/obras/)."""
+
+    def get_queryset(self):
+        return Obra.objects.filter(fonte='agregador').order_by('-created_at')
+
+
+class CapituloViewSet(viewsets.ModelViewSet):
+    """CRUD de capítulos (/api/capitulos/)."""
+
+    queryset = Capitulo.objects.select_related('obra').order_by('numero')
+    serializer_class = CapituloPublicoSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class PaginaViewSet(viewsets.ModelViewSet):
+    """CRUD de páginas (/api/paginas/)."""
+
+    queryset = Pagina.objects.select_related('capitulo').order_by('ordem')
+    serializer_class = PaginaPublicaSerializer
+    permission_classes = [IsAuthenticated]
+
+
+# ── Uploads individuais ──────────────────────────────────────────────────────
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
+def upload_imagem(request):
+    """
+    POST /api/upload/imagem/
+    Params: slug, imagem (file)
+    Faz upload da capa de uma obra para o R2.
+    """
+    from core.storage import upload_bytes, R2ConfigError
+
+    slug = request.data.get('slug', '').strip()
+    arquivo = request.FILES.get('imagem')
+
+    if not slug or not arquivo:
+        return Response(
+            {'error': 'slug e imagem são obrigatórios.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        data = arquivo.read()
+        ext = arquivo.name.rsplit('.', 1)[-1].lower()
+        if ext == 'jpeg':
+            ext = 'jpg'
+        key = f'mangas/{slug}/capa.{ext}'
+        url = upload_bytes(key, data, content_type=f'image/{ext}')
+        return Response({'url': url}, status=status.HTTP_200_OK)
+    except R2ConfigError as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f'Erro no upload_imagem: {e}')
+        return Response(
+            {'error': f'Falha no upload: {e}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
+def upload_pagina(request):
+    """
+    POST /api/upload/pagina/
+    Params: slug, capitulo_numero, ordem, pagina (file)
+    Faz upload de uma página individual para o R2.
+    """
+    from core.storage import upload_bytes, R2ConfigError
+
+    slug = request.data.get('slug', '').strip()
+    capitulo_numero = request.data.get('capitulo_numero', '').strip()
+    ordem = request.data.get('ordem', '0').strip()
+    arquivo = request.FILES.get('pagina')
+
+    if not slug or not capitulo_numero or not arquivo:
+        return Response(
+            {'error': 'slug, capitulo_numero e pagina são obrigatórios.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        data = arquivo.read()
+        ext = arquivo.name.rsplit('.', 1)[-1].lower()
+        if ext == 'jpeg':
+            ext = 'jpg'
+        key = f'mangas/{slug}/cap-{capitulo_numero}/p-{int(ordem):03d}.{ext}'
+        url = upload_bytes(key, data, content_type=f'image/{ext}')
+        return Response(
+            {'url': url, 'ordem': int(ordem)},
+            status=status.HTTP_200_OK,
+        )
+    except R2ConfigError as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f'Erro no upload_pagina: {e}')
+        return Response(
+            {'error': f'Falha no upload: {e}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+# ── API pública (BiToons / WindScan) ────────────────────────────────────────
+
 class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API pública para sites BiToons/WindScan.
