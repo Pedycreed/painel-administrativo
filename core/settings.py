@@ -102,8 +102,12 @@ CORS_ALLOWED_ORIGINS = _env_list(
         'https://www.windscan.xyz',
         # Vercel deploys
         'https://painel-administrativo-omega.vercel.app',
+        'https://bitoons-i0k9txprs-painelex-s-projects.vercel.app',
+        'https://windscan-156ptzoq7-painelex-s-projects.vercel.app',
     ],
 )
+# Permitir qualquer origem Vercel (preview deployments)
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 
