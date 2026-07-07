@@ -23,6 +23,13 @@ class CapituloSerializer(serializers.ModelSerializer):
             'criado_em', 'paginas',
         ]
 
+
+class CapituloCreateSerializer(serializers.ModelSerializer):
+    """Serializer simplificado para criação de capítulos (sem campos read-only conflitantes)."""
+    class Meta:
+        model = Capitulo
+        fields = ['id', 'obra', 'numero', 'titulo', 'data_publicacao', 'ordem', 'conteudo']
+
 class ObraSerializer(serializers.ModelSerializer):
     capitulos = CapituloSerializer(many=True, read_only=True)
 
