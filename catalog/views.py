@@ -58,8 +58,12 @@ class CapituloViewSet(viewsets.ModelViewSet):
     """CRUD de capítulos (/api/capitulos/)."""
 
     queryset = Capitulo.objects.select_related('obra').order_by('numero')
-    serializer_class = CapituloPublicoSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ('create', 'update', 'partial_update'):
+            return CapituloSerializer
+        return CapituloPublicoSerializer
 
 
 class PaginaViewSet(viewsets.ModelViewSet):
