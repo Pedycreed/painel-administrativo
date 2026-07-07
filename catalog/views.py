@@ -66,8 +66,12 @@ class PaginaViewSet(viewsets.ModelViewSet):
     """CRUD de páginas (/api/paginas/)."""
 
     queryset = Pagina.objects.select_related('capitulo').order_by('ordem')
-    serializer_class = PaginaPublicaSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ('create', 'update', 'partial_update'):
+            return PaginaSerializer
+        return PaginaPublicaSerializer
 
 
 # ── Uploads individuais ──────────────────────────────────────────────────────
