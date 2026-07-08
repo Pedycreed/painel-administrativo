@@ -113,7 +113,7 @@ export default function UploadPage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const fd = new FormData()
-        fd.append("imagem", file)
+        fd.append("pagina", file)
         fd.append("slug", obra.slug)
         fd.append("capitulo_numero", numero)
         fd.append("ordem", String(i + 1))
