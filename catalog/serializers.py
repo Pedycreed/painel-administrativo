@@ -7,10 +7,9 @@ class PaginaSerializer(serializers.ModelSerializer):
         fields = ['id', 'capitulo', 'imagem_url', 'thumbnail_url', 'ordem', 'width', 'height']
 
 class CapituloSerializer(serializers.ModelSerializer):
+    """Serializer para leitura de capítulos (com dados da obra expandidos)."""
     paginas = PaginaSerializer(many=True, read_only=True)
-    obra_slug = serializers.SlugRelatedField(
-        source='obra', slug_field='slug', read_only=True
-    )
+    obra_slug = serializers.CharField(source='obra.slug', read_only=True)
     obra_titulo = serializers.CharField(source='obra.titulo', read_only=True)
     obra_fonte = serializers.CharField(source='obra.fonte', read_only=True)
     criado_em = serializers.DateTimeField(source='created_at', read_only=True)
@@ -24,13 +23,16 @@ class CapituloSerializer(serializers.ModelSerializer):
         ]
 
 
-class CapituloCreateSerializer(serializers.ModelSerializer):
-    """Serializer simplificado para criação de capítulos (sem campos read-only conflitantes)."""
-    conteudo = serializers.CharField(required=False, allow_blank=True, default='')
-
+class CapituloWriteSerializer(serializers.ModelSerializer):
+    """Serializer para criação/edição de capítulos (sem conflitos de source)."""
     class Meta:
         model = Capitulo
         fields = ['id', 'obra', 'numero', 'titulo', 'data_publicacao', 'ordem', 'conteudo']
+        extra_kwargs = {
+            'conteudo': {'required': False, 'default': ''},
+            'titulo': {'required': False, 'default': ''},
+            'data_publicacao': {'required': False},
+        }
 
 class ObraSerializer(serializers.ModelSerializer):
     capitulos = CapituloSerializer(many=True, read_only=True)

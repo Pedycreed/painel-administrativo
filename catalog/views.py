@@ -8,7 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from .models import Obra, Capitulo, Pagina, Favorito, HistoricoLeitura, ListaLeitura
 from .serializers import (
     ObraPublicListSerializer, ObraPublicDetailSerializer,
-    CapituloPublicoSerializer, CapituloLeitorSerializer,
+    CapituloPublicoSerializer, CapituloLeitorSerializer, CapituloSerializer, CapituloWriteSerializer,
     PaginaPublicaSerializer, FavoritoSerializer,
     HistoricoSerializer, ListaLeituraSerializer,
     ObraSerializer, PaginaSerializer,
@@ -62,8 +62,8 @@ class CapituloViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
-            return CapituloCreateSerializer
-        return CapituloPublicoSerializer
+            return CapituloWriteSerializer
+        return CapituloSerializer
 
 
 class PaginaViewSet(viewsets.ModelViewSet):
