@@ -225,17 +225,21 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
 class FavoritoViewSet(viewsets.ModelViewSet):
     """
     CRUD de favoritos do usuário autenticado.
-    - GET /api/favoritos/           → listar
-    - POST /api/favoritos/          → adicionar {obra_id}
-    - DELETE /api/favoritos/{id}/   → remover
+    - GET /api/favoritos/?fonte=agregador  → listar (filtrar por fonte)
+    - POST /api/favoritos/                 → adicionar {obra_id, fonte}
+    - DELETE /api/favoritos/{id}/          → remover
     """
     serializer_class = FavoritoSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Favorito.objects.filter(
+        qs = Favorito.objects.filter(
             usuario=self.request.user
         ).select_related('obra')
+        fonte = self.request.query_params.get('fonte')
+        if fonte in ('scan', 'agregador'):
+            qs = qs.filter(fonte=fonte)
+        return qs
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
@@ -244,8 +248,9 @@ class FavoritoViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, url_path=r'obra/(?P<obra_id>\d+)')
     def por_obra(self, request, obra_id=None):
-        """DELETE /api/favoritos/obra/{obra_id}/ — remove favorito pela obra."""
-        fav = Favorito.objects.filter(usuario=request.user, obra_id=obra_id).first()
+        """DELETE /api/favoritos/obra/{obra_id}/?fonte=agregador — remove favorito pela obra e fonte."""
+        fonte = request.query_params.get('fonte', 'scan')
+        fav = Favorito.objects.filter(usuario=request.user, obra_id=obra_id, fonte=fonte).first()
         if not fav:
             return Response({'error': 'Favorito não encontrado.'}, status=404)
         fav.delete()
@@ -276,11 +281,11 @@ class HistoricoViewSet(viewsets.ModelViewSet):
 class ListaLeituraViewSet(viewsets.ModelViewSet):
     """
     Lista de leitura do usuário (Lendo/Planejado/Concluído).
-    - GET /api/lista-leitura/                → listar tudo
-    - GET /api/lista-leitura/?tipo=reading   → filtrar por tipo
-    - POST /api/lista-leitura/               → adicionar {obra_id, tipo}
-    - PATCH /api/lista-leitura/{id}/         → mudar tipo
-    - DELETE /api/lista-leitura/{id}/        → remover
+    - GET /api/lista-leitura/?fonte=agregador  → filtrar por fonte
+    - GET /api/lista-leitura/?tipo=reading     → filtrar por tipo
+    - POST /api/lista-leitura/                 → adicionar {obra_id, tipo, fonte}
+    - PATCH /api/lista-leitura/{id}/           → mudar tipo
+    - DELETE /api/lista-leitura/{id}/          → remover
     """
     serializer_class = ListaLeituraSerializer
     permission_classes = [IsAuthenticated]
@@ -292,6 +297,9 @@ class ListaLeituraViewSet(viewsets.ModelViewSet):
         tipo = self.request.query_params.get('tipo')
         if tipo in ('reading', 'plan', 'completed'):
             qs = qs.filter(tipo=tipo)
+        fonte = self.request.query_params.get('fonte')
+        if fonte in ('scan', 'agregador'):
+            qs = qs.filter(fonte=fonte)
         return qs
 
     def get_serializer_context(self):
@@ -301,8 +309,9 @@ class ListaLeituraViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, url_path=r'obra/(?P<obra_id>\d+)')
     def por_obra(self, request, obra_id=None):
-        """DELETE /api/lista-leitura/obra/{obra_id}/ — remove pela obra."""
-        item = ListaLeitura.objects.filter(usuario=request.user, obra_id=obra_id).first()
+        """DELETE /api/lista-leitura/obra/{obra_id}/?fonte=agregador — remove pela obra e fonte."""
+        fonte = request.query_params.get('fonte', 'scan')
+        item = ListaLeitura.objects.filter(usuario=request.user, obra_id=obra_id, fonte=fonte).first()
         if not item:
             return Response({'error': 'Item não encontrado.'}, status=404)
         item.delete()

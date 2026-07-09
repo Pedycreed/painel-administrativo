@@ -116,7 +116,7 @@ class FavoritoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Favorito
-        fields = ['id', 'obra', 'obra_id', 'created_at']
+        fields = ['id', 'obra', 'obra_id', 'fonte', 'created_at']
 
     def create(self, validated_data):
         validated_data['usuario'] = self.context['request'].user
@@ -159,13 +159,14 @@ class ListaLeituraSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ListaLeitura
-        fields = ['id', 'obra', 'obra_id', 'tipo', 'created_at']
+        fields = ['id', 'obra', 'obra_id', 'tipo', 'fonte', 'created_at']
 
     def create(self, validated_data):
         validated_data['usuario'] = self.context['request'].user
         obj, created = ListaLeitura.objects.update_or_create(
             usuario=validated_data['usuario'],
             obra_id=validated_data['obra_id'],
+            fonte=validated_data.get('fonte', 'scan'),
             defaults={'tipo': validated_data.get('tipo', 'reading')},
         )
         return obj

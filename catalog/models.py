@@ -69,18 +69,23 @@ class Pagina(models.Model):
 
 
 class Favorito(models.Model):
+    FONTE_CHOICES = [
+        ('scan', 'Scan'),
+        ('agregador', 'Agregador'),
+    ]
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favoritos'
     )
     obra = models.ForeignKey(Obra, on_delete=models.CASCADE, related_name='favoritos')
+    fonte = models.CharField(max_length=20, choices=FONTE_CHOICES, default='scan', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('usuario', 'obra')
+        unique_together = ('usuario', 'obra', 'fonte')
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.usuario} ★ {self.obra}'
+        return f'{self.usuario} ★ {self.obra} [{self.fonte}]'
 
 
 class HistoricoLeitura(models.Model):
@@ -99,6 +104,10 @@ class HistoricoLeitura(models.Model):
 
 
 class ListaLeitura(models.Model):
+    FONTE_CHOICES = [
+        ('scan', 'Scan'),
+        ('agregador', 'Agregador'),
+    ]
     TIPO_CHOICES = [
         ('reading', 'Lendo'),
         ('plan', 'Planejado'),
@@ -109,11 +118,12 @@ class ListaLeitura(models.Model):
     )
     obra = models.ForeignKey(Obra, on_delete=models.CASCADE, related_name='listas')
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='reading')
+    fonte = models.CharField(max_length=20, choices=FONTE_CHOICES, default='scan', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('usuario', 'obra')
+        unique_together = ('usuario', 'obra', 'fonte')
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.usuario} [{self.tipo}] {self.obra}'
+        return f'{self.usuario} [{self.tipo}] {self.obra} [{self.fonte}]'
