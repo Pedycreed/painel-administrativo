@@ -112,6 +112,7 @@ class ListaLeitura(models.Model):
         ('reading', 'Lendo'),
         ('plan', 'Planejado'),
         ('completed', 'Concluído'),
+        ('paused', 'Pausado'),
     ]
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lista_leitura'

@@ -295,7 +295,7 @@ class ListaLeituraViewSet(viewsets.ModelViewSet):
             usuario=self.request.user
         ).select_related('obra')
         tipo = self.request.query_params.get('tipo')
-        if tipo in ('reading', 'plan', 'completed'):
+        if tipo in ('reading', 'plan', 'completed', 'paused'):
             qs = qs.filter(tipo=tipo)
         fonte = self.request.query_params.get('fonte')
         if fonte in ('scan', 'agregador'):
