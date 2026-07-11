@@ -246,7 +246,7 @@ class FavoritoViewSet(viewsets.ModelViewSet):
         ctx['request'] = self.request
         return ctx
 
-    @action(detail=False, url_path=r'obra/(?P<obra_id>\d+)')
+    @action(detail=False, methods=['delete'], url_path=r'obra/(?P<obra_id>\d+)')
     def por_obra(self, request, obra_id=None):
         """DELETE /api/favoritos/obra/{obra_id}/?fonte=agregador — remove favorito pela obra e fonte."""
         fonte = request.query_params.get('fonte', 'scan')
@@ -307,7 +307,7 @@ class ListaLeituraViewSet(viewsets.ModelViewSet):
         ctx['request'] = self.request
         return ctx
 
-    @action(detail=False, url_path=r'obra/(?P<obra_id>\d+)')
+    @action(detail=False, methods=['delete'], url_path=r'obra/(?P<obra_id>\d+)')
     def por_obra(self, request, obra_id=None):
         """DELETE /api/lista-leitura/obra/{obra_id}/?fonte=agregador — remove pela obra e fonte."""
         fonte = request.query_params.get('fonte', 'scan')
