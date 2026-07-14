@@ -398,3 +398,90 @@ def upload_capitulo_zip(request):
         import logging
         logging.getLogger(__name__).error(f'Erro no upload_capitulo_zip: {e}')
         return Response({'error': f'Falha no upload: {e}'}, status=500)
+
+
+# ── Ingest Chapter (Agregador) ──────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ingest_chapter(request):
+    """
+    POST /api/ingest-chapter/
+    Body: {"slug": "...", "numero": "1", "paginas": [{"ordem": 1, "imagem_url": "..."}]}
+    
+    Endpoint para o worker do agregador registrar capítulos baixados.
+    Cria/atualiza a obra e o capítulo. Substitui páginas se capítulo já existe.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    if not request.user.is_staff:
+        return Response({'error': 'Apenas administradores.'}, status=403)
+    
+    slug = request.data.get('slug')
+    numero = request.data.get('numero')
+    paginas = request.data.get('paginas', [])
+    
+    if not slug or not numero:
+        return Response({'error': 'slug e numero são obrigatórios.'}, status=400)
+    if not paginas:
+        return Response({'error': 'paginas não pode estar vazio.'}, status=400)
+    
+    from django.db import transaction
+    
+    try:
+        with transaction.atomic():
+            # Criar ou atualizar obra
+            obra, created = Obra.objects.update_or_create(
+                slug=slug,
+                defaults={
+                    'titulo': request.data.get('titulo', slug.replace('-', ' ').title()),
+                    'tipo_obra': request.data.get('tipo_obra', 'manga'),
+                    'sinopse': request.data.get('sinopse', ''),
+                    'capa_url': request.data.get('capa_url', ''),
+                    'autor': request.data.get('autor', ''),
+                    'status': request.data.get('status', 'ongoing'),
+                    'fonte': 'agregador',
+                    'idioma': 'pt',
+                    'tags': request.data.get('generos', []),
+                },
+            )
+            
+            # Criar ou atualizar capítulo
+            capitulo, cap_created = Capitulo.objects.update_or_create(
+                obra=obra,
+                numero=str(numero),
+                defaults={
+                    'titulo': request.data.get('titulo_capitulo', ''),
+                    'ordem': int(float(numero)),
+                },
+            )
+            
+            # Deletar páginas antigas e criar novas
+            Pagina.objects.filter(capitulo=capitulo).delete()
+            paginas_objs = []
+            for p in paginas:
+                paginas_objs.append(Pagina(
+                    capitulo=capitulo,
+                    ordem=p['ordem'],
+                    imagem_url=p['imagem_url'],
+                    thumbnail_url=p.get('thumbnail_url', ''),
+                    width=0,
+                    height=0,
+                ))
+            Pagina.objects.bulk_create(paginas_objs)
+            
+            logger.info(f'Ingerido: {slug} cap {numero} ({len(paginas)} pág)')
+            
+            return Response({
+                'status': 'ok',
+                'obra_id': obra.id,
+                'capitulo_id': capitulo.id,
+                'paginas_criadas': len(paginas_objs),
+                'obra_criada': created,
+                'capitulo_criado': cap_created,
+            })
+    
+    except Exception as e:
+        logger.error(f'Erro no ingest_chapter: {e}')
+        return Response({'error': str(e)}, status=500)

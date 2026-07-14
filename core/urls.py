@@ -11,6 +11,7 @@ from catalog.views import (
     ScanObraViewSet, AgregadorObraViewSet,
     PublicObraViewSet, FavoritoViewSet, HistoricoViewSet,
     ListaLeituraViewSet, generos_favoritos,
+    ingest_chapter,
 )
 from accounts.views import (
     RegistroView,
@@ -65,6 +66,7 @@ urlpatterns = [
     # API autenticada (favoritos + histórico + lista)
     path('api/', include(user_router.urls)),
     path('api/generos-favoritos/', generos_favoritos, name='generos-favoritos'),
+    path('api/ingest-chapter/', ingest_chapter, name='ingest-chapter'),
 
     # Rotas separadas por fonte (Scan)
     path('api/scan/', include([

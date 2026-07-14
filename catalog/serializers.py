@@ -153,6 +153,19 @@ class HistoricoSerializer(serializers.ModelSerializer):
         return obj
 
 
+# ── Ingest Chapter (Agregador) ──────────────────────────────
+
+class IngestPaginaSerializer(serializers.Serializer):
+    ordem = serializers.IntegerField(min_value=1)
+    imagem_url = serializers.URLField()
+    thumbnail_url = serializers.URLField(required=False, allow_blank=True, default='')
+
+
+class IngestChapterSerializer(serializers.Serializer):
+    slug = serializers.SlugField()
+    numero = serializers.CharField(max_length=20)
+    paginas = IngestPaginaSerializer(many=True)
+
 class ListaLeituraSerializer(serializers.ModelSerializer):
     obra = ObraPublicListSerializer(read_only=True)
     obra_id = serializers.IntegerField(write_only=True)
