@@ -483,5 +483,7 @@ def ingest_chapter(request):
             })
     
     except Exception as e:
+        import traceback
         logger.error(f'Erro no ingest_chapter: {e}')
+        logger.error(traceback.format_exc())
         return Response({'error': str(e)}, status=500)

@@ -165,6 +165,12 @@ class IngestChapterSerializer(serializers.Serializer):
     slug = serializers.SlugField()
     numero = serializers.CharField(max_length=20)
     paginas = IngestPaginaSerializer(many=True)
+    titulo = serializers.CharField(max_length=255, required=False, default='')
+    sinopse = serializers.CharField(required=False, allow_blank=True, default='')
+    capa_url = serializers.CharField(required=False, allow_blank=True, default='')
+    autor = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+    generos = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    tipo_obra = serializers.ChoiceField(choices=['manga', 'manhwa', 'manhua', 'novel'], required=False, default='manga')
 
 class ListaLeituraSerializer(serializers.ModelSerializer):
     obra = ObraPublicListSerializer(read_only=True)

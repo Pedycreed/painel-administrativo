@@ -28,7 +28,7 @@ class Obra(models.Model):
     fonte = models.CharField(max_length=20, choices=FONTE_CHOICES, default='scan')
     idioma = models.CharField(max_length=2, choices=IDIOMA_CHOICES, default='pt', db_index=True)
     tipo_obra = models.CharField(max_length=10, choices=TIPO_CHOICES, default='manga')
-    capa_url = models.CharField(max_length=500, blank=True)
+    capa_url = models.TextField(blank=True, default='')
     sinopse = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
