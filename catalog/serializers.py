@@ -53,7 +53,7 @@ class CapituloPublicoSerializer(serializers.ModelSerializer):
 
 class ObraPublicListSerializer(serializers.ModelSerializer):
     """Serializer leve para listagem pública (home, busca)."""
-    total_capitulos = serializers.SerializerMethodField()
+    total_capitulos = serializers.IntegerField(read_only=True, source='cap_count')
     ultimo_capitulo_numero = serializers.SerializerMethodField()
     ultimo_capitulo_data = serializers.SerializerMethodField()
 
@@ -65,15 +65,12 @@ class ObraPublicListSerializer(serializers.ModelSerializer):
             'total_capitulos', 'ultimo_capitulo_numero', 'ultimo_capitulo_data',
         ]
 
-    def get_total_capitulos(self, obj):
-        return obj.capitulos.count()
-
     def get_ultimo_capitulo_numero(self, obj):
-        ultimo = obj.capitulos.order_by('-ordem').first()
+        ultimo = obj.capitulos.order_by('-ordem').first() if hasattr(obj, '_prefetched_objects_cache') else obj.capitulos.order_by('-ordem').first()
         return str(ultimo.numero) if ultimo else None
 
     def get_ultimo_capitulo_data(self, obj):
-        ultimo = obj.capitulos.order_by('-ordem').first()
+        ultimo = obj.capitulos.order_by('-ordem').first() if hasattr(obj, '_prefetched_objects_cache') else obj.capitulos.order_by('-ordem').first()
         return ultimo.data_publicacao if ultimo else None
 
 

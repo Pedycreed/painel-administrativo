@@ -182,6 +182,7 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
         return ObraPublicListSerializer
 
     def get_queryset(self):
+        from django.db.models import Count
         qs = Obra.objects.all()
 
         idioma = self.request.query_params.get('idioma')
@@ -192,16 +193,19 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
         if fonte in ('scan', 'agregador'):
             qs = qs.filter(fonte=fonte)
 
+        qs = qs.annotate(cap_count=Count('capitulos'))
+
         order = self.request.query_params.get('order', 'recent')
         if order == 'popular':
-            from django.db.models import Count
             qs = qs.annotate(fav_count=Count('favoritos')).order_by('-fav_count')
         elif order == 'title':
             qs = qs.order_by('titulo')
         else:
             qs = qs.order_by('-created_at')
 
-        return qs.prefetch_related('capitulos')
+        if self.action == 'retrieve':
+            return qs.prefetch_related('capitulos')
+        return qs
 
     @action(detail=True, url_path=r'capitulo/(?P<numero>[\d.]+)')
     def capitulo(self, request, slug=None, numero=None):
