@@ -437,9 +437,9 @@ def ingest_chapter(request):
                 defaults={
                     'titulo': request.data.get('titulo', slug.replace('-', ' ').title()),
                     'tipo_obra': request.data.get('tipo_obra', 'manga'),
-                    'sinopse': request.data.get('sinopse', ''),
-                    'capa_url': request.data.get('capa_url', ''),
-                    'autor': request.data.get('autor', ''),
+                    'sinopse': request.data.get('sinopse') or '',
+                    'capa_url': request.data.get('capa_url') or '',
+                    'autor': request.data.get('autor') or slug.replace('-', ' ').title(),
                     'status': request.data.get('status', 'ongoing'),
                     'fonte': 'agregador',
                     'idioma': 'pt',
