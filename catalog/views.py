@@ -446,7 +446,7 @@ def ingest_chapter(request):
                     'autor': request.data.get('autor') or slug.replace('-', ' ').title(),
                     'status': request.data.get('status', 'ongoing'),
                     'fonte': 'agregador',
-                    'idioma': 'pt',
+                    'idioma': request.data.get('idioma', 'pt'),
                     'tags': request.data.get('generos', []),
                 },
             )
