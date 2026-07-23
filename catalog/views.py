@@ -440,20 +440,41 @@ def ingest_chapter(request):
     
     try:
         with transaction.atomic():
-            # Criar ou atualizar obra
-            obra, created = Obra.objects.update_or_create(
-                slug=slug,
-                defaults={
-                    'titulo': request.data.get('titulo', slug.replace('-', ' ').title()),
-                    'tipo_obra': request.data.get('tipo_obra', 'manga'),
-                    'sinopse': request.data.get('sinopse') or '',
-                    'capa_url': request.data.get('capa_url') or '',
-                    'autor': request.data.get('autor') or slug.replace('-', ' ').title(),
-                    'status': request.data.get('status', 'ongoing'),
-                    'fonte': 'agregador',
-                    'idioma': request.data.get('idioma', 'pt'),
-                    'tags': request.data.get('generos', []),
-                },
+            # Buscar obra existente por título (case-insensitive) pra evitar duplicatas
+            titulo = request.data.get('titulo', slug.replace('-', ' ').title())
+            obra_existente = Obra.objects.filter(
+                titulo__iexact=titulo
+            ).first()
+            
+            if obra_existente:
+                # Atualizar obra existente (não criar duplicata)
+                slug = obra_existente.slug  # usar o slug já existente
+                obra = obra_existente
+                obra.tipo_obra = request.data.get('tipo_obra', obra.tipo_obra)
+                obra.sinopse = request.data.get('sinopse') or obra.sinopse
+                obra.capa_url = request.data.get('capa_url') or obra.capa_url
+                obra.autor = request.data.get('autor') or obra.autor
+                obra.status = request.data.get('status', obra.status)
+                obra.idioma = request.data.get('idioma', obra.idioma)
+                obra.tags = request.data.get('generos', obra.tags)
+                obra.save()
+                created = False
+            else:
+                # Criar nova obra
+                obra, created = Obra.objects.update_or_create(
+                    slug=slug,
+                    defaults={
+                        'titulo': titulo,
+                        'tipo_obra': request.data.get('tipo_obra', 'manga'),
+                        'sinopse': request.data.get('sinopse') or '',
+                        'capa_url': request.data.get('capa_url') or '',
+                        'autor': request.data.get('autor') or slug.replace('-', ' ').title(),
+                        'status': request.data.get('status', 'ongoing'),
+                        'fonte': 'agregador',
+                        'idioma': request.data.get('idioma', 'pt'),
+                        'tags': request.data.get('generos', []),
+                    },
+                )
             )
             
             # Criar ou atualizar capítulo
