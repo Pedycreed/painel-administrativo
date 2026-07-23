@@ -70,7 +70,10 @@ class ObraPublicListSerializer(serializers.ModelSerializer):
         return str(ultimo.numero) if ultimo else None
 
     def get_ultimo_capitulo_data(self, obj):
-        ultimo = obj.capitulos.order_by('-ordem').first() if hasattr(obj, '_prefetched_objects_cache') else obj.capitulos.order_by('-ordem').first()
+        # Usa annotation do queryset se disponível (evita N+1)
+        if hasattr(obj, 'ultimo_cap_data') and obj.ultimo_cap_data:
+            return obj.ultimo_cap_data
+        ultimo = obj.capitulos.order_by('-ordem').first()
         return ultimo.data_publicacao if ultimo else None
 
 

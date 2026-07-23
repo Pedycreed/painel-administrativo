@@ -200,6 +200,11 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.annotate(fav_count=Count('favoritos')).order_by('-fav_count')
         elif order == 'title':
             qs = qs.order_by('titulo')
+        elif order == 'recent':
+            from django.db.models import Max
+            qs = qs.annotate(
+                ultimo_cap_data=Max('capitulos__data_publicacao')
+            ).order_by('-ultimo_cap_data')
         else:
             qs = qs.order_by('-created_at')
 
@@ -452,12 +457,14 @@ def ingest_chapter(request):
             )
             
             # Criar ou atualizar capítulo
+            from django.utils import timezone
             capitulo, cap_created = Capitulo.objects.update_or_create(
                 obra=obra,
                 numero=str(numero),
                 defaults={
                     'titulo': request.data.get('titulo_capitulo', ''),
                     'ordem': int(float(numero)),
+                    'data_publicacao': timezone.now(),
                 },
             )
             
