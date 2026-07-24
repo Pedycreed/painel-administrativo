@@ -452,10 +452,13 @@ def ingest_chapter(request):
     
     try:
         with transaction.atomic():
-            # Buscar obra existente por título (case-insensitive) pra evitar duplicatas
+            # Buscar obra existente por título + idioma (evita duplicatas no mesmo idioma,
+            # mas permite a mesma obra em PT e EN como entradas separadas)
             titulo = request.data.get('titulo', slug.replace('-', ' ').title())
+            idioma = request.data.get('idioma', 'pt')
             obra_existente = Obra.objects.filter(
-                titulo__iexact=titulo
+                titulo__iexact=titulo,
+                idioma=idioma,
             ).first()
             
             if obra_existente:
