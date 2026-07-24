@@ -475,7 +475,6 @@ def ingest_chapter(request):
                         'tags': request.data.get('generos', []),
                     },
                 )
-            )
             
             # Criar ou atualizar capítulo
             from django.utils import timezone
