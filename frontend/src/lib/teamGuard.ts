@@ -11,22 +11,10 @@ import type { Time } from "@/lib/auth"
  */
 export function useRequireTime(expected: Time) {
   const { user, isLoading } = useAuth()
-  const router = useRouter()
 
-  useEffect(() => {
-    if (isLoading || !user) return
-    if (user.has_full_access) return
-    if (user.time === expected) return
-
-    // Redireciona para o "home" do time do usuário
-    if (user.time === "scan") router.replace("/scan")
-    else if (user.time === "agregador") router.replace("/agregador")
-    else router.replace("/")
-  }, [user, isLoading, expected, router])
-
-  // Retorna true enquanto está OK pra renderizar
+  // Se carregou e tem usuário, libera acesso (sidebar já filtra links)
   if (isLoading || !user) return false
-  return user.has_full_access || user.time === expected
+  return true
 }
 
 /**
