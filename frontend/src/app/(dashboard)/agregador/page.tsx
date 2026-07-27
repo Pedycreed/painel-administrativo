@@ -36,16 +36,26 @@ export default function AgregadorPage() {
   const [obras, setObras] = useState<Obra[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [idioma, setIdioma] = useState<"pt" | "en">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("agregador_idioma") as "pt" | "en") || "pt"
+    }
+    return "pt"
+  })
 
   useEffect(() => {
     if (!allowed) return
     loadObras()
-  }, [allowed])
+  }, [allowed, idioma])
+
+  useEffect(() => {
+    localStorage.setItem("agregador_idioma", idioma)
+  }, [idioma])
 
   async function loadObras() {
     try {
-      // Fetch apenas obras do agregador
-      const data = await apiGet<Obra[]>("/agregador/obras/")
+      setLoading(true)
+      const data = await apiGet<Obra[]>(`/agregador/obras/?idioma=${idioma}`)
       setObras(data)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao carregar obras do agregador")
@@ -93,11 +103,33 @@ export default function AgregadorPage() {
       </div>
 
       <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-6xl mx-auto">
-        {/* Welcome */}
+        {/* Welcome + Language Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Agregador</h1>
             <p className="text-[oklch(0.55_0_0)] text-sm mt-1">Obras externas agregadas automaticamente</p>
+          </div>
+          <div className="flex items-center gap-1 bg-[oklch(0.10_0_0)] rounded-lg p-1 border border-border">
+            <button
+              onClick={() => setIdioma("pt")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                idioma === "pt"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-[oklch(0.65_0_0)] hover:text-foreground"
+              }`}
+            >
+              🇧🇷 PT
+            </button>
+            <button
+              onClick={() => setIdioma("en")}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                idioma === "en"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-[oklch(0.65_0_0)] hover:text-foreground"
+              }`}
+            >
+              🇺🇸 EN
+            </button>
           </div>
         </div>
 
@@ -106,7 +138,7 @@ export default function AgregadorPage() {
           <Card className="bg-[oklch(0.12_0_0)] border-border">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <p className="text-[oklch(0.55_0_0)] text-sm">Obras (Agregador)</p>
+                <p className="text-[oklch(0.55_0_0)] text-sm">Obras ({idioma.toUpperCase()})</p>
                 <Bookmark className="w-4 h-4 text-[oklch(0.55_0_0)]" />
               </div>
             </CardHeader>
@@ -118,7 +150,7 @@ export default function AgregadorPage() {
           <Card className="bg-[oklch(0.12_0_0)] border-border">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <p className="text-[oklch(0.55_0_0)] text-sm">Capítulos (Agregador)</p>
+                <p className="text-[oklch(0.55_0_0)] text-sm">Capítulos ({idioma.toUpperCase()})</p>
                 <BookOpen className="w-4 h-4 text-[oklch(0.55_0_0)]" />
               </div>
             </CardHeader>
@@ -130,7 +162,7 @@ export default function AgregadorPage() {
           <Card className="bg-[oklch(0.12_0_0)] border-border">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <p className="text-[oklch(0.55_0_0)] text-sm">Páginas (Agregador)</p>
+                <p className="text-[oklch(0.55_0_0)] text-sm">Páginas ({idioma.toUpperCase()})</p>
                 <ArrowUpRight className="w-4 h-4 text-[oklch(0.55_0_0)]" />
               </div>
             </CardHeader>
@@ -143,11 +175,11 @@ export default function AgregadorPage() {
         {/* Obras do Agregador */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-foreground">Catálogo do Agregador</h2>
+            <h2 className="text-base font-semibold text-foreground">Catálogo do Agregador ({idioma.toUpperCase()})</h2>
           </div>
 
           {obras.length === 0 ? (
-            <p className="text-[oklch(0.55_0_0)] text-center py-10">Nenhuma obra do Agregador cadastrada.</p>
+            <p className="text-[oklch(0.55_0_0)] text-center py-10">Nenhuma obra {idioma.toUpperCase()} do Agregador cadastrada.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {obras.map((obra) => (
@@ -175,6 +207,11 @@ export default function AgregadorPage() {
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-[oklch(0.55_0_0)] text-[10px]">
                           {obra.capitulos?.length || 0} caps
+                        </span>
+                        <span className={`text-[9px] font-bold uppercase px-1 py-0.5 rounded ${
+                          obra.idioma === "en" ? "bg-blue-500/20 text-blue-400" : "bg-green-500/20 text-green-400"
+                        }`}>
+                          {obra.idioma?.toUpperCase() || "?"}
                         </span>
                       </div>
                     </div>

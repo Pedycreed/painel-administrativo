@@ -51,7 +51,11 @@ class AgregadorObraViewSet(ObraViewSet):
     """Obras filtradas por fonte='agregador' (/api/agregador/obras/)."""
 
     def get_queryset(self):
-        return Obra.objects.filter(fonte='agregador').order_by('-created_at')
+        qs = Obra.objects.filter(fonte='agregador')
+        idioma = self.request.query_params.get('idioma')
+        if idioma in ('pt', 'en'):
+            qs = qs.filter(idioma=idioma)
+        return qs.order_by('-created_at')
 
 
 class CapituloViewSet(viewsets.ModelViewSet):
