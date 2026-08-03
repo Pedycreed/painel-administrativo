@@ -23,11 +23,11 @@ class Obra(models.Model):
     ]
     titulo = models.CharField(max_length=255, db_index=True)
     autor = models.CharField(max_length=255, blank=True, default='')
-    slug = models.SlugField(unique=True, db_index=True)
+    slug = models.SlugField(unique=True, db_index=True, max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ongoing')
     fonte = models.CharField(max_length=20, choices=FONTE_CHOICES, default='scan')
     idioma = models.CharField(max_length=2, choices=IDIOMA_CHOICES, default='pt', db_index=True)
-    tipo_obra = models.CharField(max_length=10, choices=TIPO_CHOICES, default='manga')
+    tipo_obra = models.CharField(max_length=20, choices=TIPO_CHOICES, default='manga')
     capa_url = models.TextField(blank=True, default='')
     sinopse = models.TextField(blank=True, default='')
     tags = models.JSONField(default=list, blank=True)
