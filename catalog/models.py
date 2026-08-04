@@ -19,7 +19,10 @@ class Obra(models.Model):
         ('manga', 'Mangá'),
         ('manhwa', 'Manhwa'),
         ('manhua', 'Manhua'),
-        ('novel', 'Light Novel'),
+        ('novel', 'Novel'),
+        ('light_novel', 'Light Novel'),
+        ('webtoon', 'Webtoon'),
+        ('unknown', 'Desconhecido'),
     ]
     titulo = models.CharField(max_length=255, db_index=True)
     autor = models.CharField(max_length=255, blank=True, default='')
