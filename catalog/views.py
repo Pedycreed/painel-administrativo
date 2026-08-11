@@ -215,6 +215,9 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return qs.prefetch_related('capitulos')
 
+        # Prefetch capitulos for list (needed for capitulos_nums field)
+        qs = qs.prefetch_related('capitulos')
+
         # Paginação via query params: limit + offset
         limit = self.request.query_params.get('limit')
         offset = self.request.query_params.get('offset')
