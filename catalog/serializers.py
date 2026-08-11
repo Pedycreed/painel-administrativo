@@ -56,6 +56,7 @@ class ObraPublicListSerializer(serializers.ModelSerializer):
     total_capitulos = serializers.IntegerField(read_only=True, source='cap_count')
     ultimo_capitulo_numero = serializers.SerializerMethodField()
     ultimo_capitulo_data = serializers.SerializerMethodField()
+    capitulos_nums = serializers.SerializerMethodField()
 
     class Meta:
         model = Obra
@@ -63,7 +64,13 @@ class ObraPublicListSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'autor', 'slug', 'status',
             'capa_url', 'tags', 'idioma', 'tipo_obra',
             'total_capitulos', 'ultimo_capitulo_numero', 'ultimo_capitulo_data',
+            'capitulos_nums',
         ]
+
+    def get_capitulos_nums(self, obj):
+        """Retorna números dos capítulos separados por vírgula (leve, sem N+1)."""
+        nums = list(obj.capitulos.values_list('numero', flat=True))
+        return ','.join(str(n) for n in nums)
 
     def get_ultimo_capitulo_numero(self, obj):
         ultimo = obj.capitulos.order_by('-ordem').first() if hasattr(obj, '_prefetched_objects_cache') else obj.capitulos.order_by('-ordem').first()
