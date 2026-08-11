@@ -449,8 +449,8 @@ def ingest_chapter(request):
     
     if not slug or not numero:
         return Response({'error': 'slug e numero são obrigatórios.'}, status=400)
-    if not paginas:
-        return Response({'error': 'paginas não pode estar vazio.'}, status=400)
+    if not paginas and not request.data.get('conteudo'):
+        return Response({'error': 'paginas ou conteudo é obrigatório.'}, status=400)
     
     from django.db import transaction
     
@@ -497,6 +497,7 @@ def ingest_chapter(request):
             
             # Criar ou atualizar capítulo
             from django.utils import timezone
+            conteudo = request.data.get('conteudo', '')
             capitulo, cap_created = Capitulo.objects.update_or_create(
                 obra=obra,
                 numero=str(numero),
@@ -504,22 +505,24 @@ def ingest_chapter(request):
                     'titulo': request.data.get('titulo_capitulo', ''),
                     'ordem': int(float(numero)),
                     'data_publicacao': timezone.now(),
+                    'conteudo': conteudo,
                 },
             )
             
-            # Deletar páginas antigas e criar novas
-            Pagina.objects.filter(capitulo=capitulo).delete()
-            paginas_objs = []
-            for p in paginas:
-                paginas_objs.append(Pagina(
-                    capitulo=capitulo,
-                    ordem=p['ordem'],
-                    imagem_url=p['imagem_url'],
-                    thumbnail_url=p.get('thumbnail_url', ''),
-                    width=0,
-                    height=0,
-                ))
-            Pagina.objects.bulk_create(paginas_objs)
+            # Deletar páginas antigas e criar novas (só pra mangá/manhwa)
+            if paginas:
+                Pagina.objects.filter(capitulo=capitulo).delete()
+                paginas_objs = []
+                for p in paginas:
+                    paginas_objs.append(Pagina(
+                        capitulo=capitulo,
+                        ordem=p['ordem'],
+                        imagem_url=p['imagem_url'],
+                        thumbnail_url=p.get('thumbnail_url', ''),
+                        width=0,
+                        height=0,
+                    ))
+                Pagina.objects.bulk_create(paginas_objs)
             
             logger.info(f'Ingerido: {slug} cap {numero} ({len(paginas)} pág)')
             
