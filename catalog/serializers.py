@@ -68,8 +68,9 @@ class ObraPublicListSerializer(serializers.ModelSerializer):
         ]
 
     def get_capitulos_nums(self, obj):
-        """Retorna números dos capítulos separados por vírgula (leve, sem N+1)."""
-        nums = list(obj.capitulos.values_list('numero', flat=True))
+        """Retorna números dos capítulos separados por vírgula."""
+        from .models import Capitulo
+        nums = Capitulo.objects.filter(obra=obj).values_list('numero', flat=True)
         return ','.join(str(n) for n in nums)
 
     def get_ultimo_capitulo_numero(self, obj):

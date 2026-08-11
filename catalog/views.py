@@ -215,9 +215,7 @@ class PublicObraViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return qs.prefetch_related('capitulos')
 
-        # Prefetch capitulos for list (needed for capitulos_nums field)
-        qs = qs.prefetch_related('capitulos')
-
+        # NO prefetch for list — conflicts with cap_count annotation
         return qs
 
     @action(detail=True, url_path=r'capitulo/(?P<numero>[\d.]+)')
