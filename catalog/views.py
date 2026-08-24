@@ -598,13 +598,24 @@ def chapter_job_sync(request):
 
         if ch_num in existing:
             job = existing[ch_num]
-            if job.status in ('pending', 'failed'):
+            if job.status == 'failed':
+                # Failed chapters are always re-queued
                 pending.append({
                     'chapter_num': ch_num,
                     'chapter_id': ch.get('chapter_id', ''),
                     'job_id': job.id,
                     'attempts': job.attempts,
                 })
+            elif job.status == 'pending':
+                # Only re-queue pending if created >5min ago (cooldown)
+                age = (now - job.created_at).total_seconds()
+                if age > 300:  # 5 minutes
+                    pending.append({
+                        'chapter_num': ch_num,
+                        'chapter_id': ch.get('chapter_id', ''),
+                        'job_id': job.id,
+                        'attempts': job.attempts,
+                    })
             # processing and published are skipped
         else:
             # New chapter — create pending job
@@ -617,7 +628,7 @@ def chapter_job_sync(request):
             pending.append({
                 'chapter_num': ch_num,
                 'chapter_id': ch.get('chapter_id', ''),
-                'job_id': None,  # will be filled after bulk_create
+                'job_id': None,
             })
 
     if to_create:
