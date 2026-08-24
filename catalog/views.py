@@ -5,7 +5,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
-from .models import Obra, Capitulo, Pagina, Favorito, HistoricoLeitura, ListaLeitura
+from .models import Obra, Capitulo, Pagina, Favorito, HistoricoLeitura, ListaLeitura, ChapterJob
 from .serializers import (
     ObraPublicListSerializer, ObraPublicDetailSerializer,
     CapituloPublicoSerializer, CapituloLeitorSerializer, CapituloSerializer, CapituloWriteSerializer,
@@ -530,3 +530,255 @@ def ingest_chapter(request):
         logger.error(f'Erro no ingest_chapter: {e}')
         logger.error(traceback.format_exc())
         return Response({'error': str(e)}, status=500)
+
+
+# ── ChapterJob API (estado persistente de processamento) ────────────────────
+
+from .models import ChapterJob
+from django.utils import timezone
+from datetime import timedelta
+import uuid
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chapter_job_sync(request):
+    """
+    Sincroniza capítulos de uma fonte com o estado persistente.
+    Usado pelo scheduler pra saber quais capítulos precisam ser processados.
+
+    POST /api/chapter-jobs/sync/
+    Body: {
+        "slug": "solo-leveling",
+        "chapters": [
+            {"chapter_num": "1", "chapter_id": "123", "source_id": "abc"},
+            {"chapter_num": "2", "chapter_id": "124", "source_id": "abc"},
+            ...
+        ]
+    }
+
+    Response: {
+        "pending": [{"chapter_num": "1", "chapter_id": "123"}, ...],
+        "published_count": 85,
+        "failed_count": 2,
+        "processing_count": 1,
+        "reclaimed": 0
+    }
+    """
+    slug = request.data.get('slug', '')
+    chapters = request.data.get('chapters', [])
+
+    if not slug or not chapters:
+        return Response({'error': 'slug and chapters required'}, status=400)
+
+    now = timezone.now()
+
+    # 1. Reclaim stale processing jobs (lease expired, >10min)
+    stale = ChapterJob.objects.filter(
+        slug=slug,
+        status='processing',
+        lease_until__lt=now,
+    )
+    reclaimed = stale.count()
+    stale.update(status='pending', lease_until=None, lease_worker_id='')
+
+    # 2. Get all existing jobs for this slug
+    existing = {
+        j.chapter_num: j
+        for j in ChapterJob.objects.filter(slug=slug)
+    }
+
+    # 3. Create missing jobs and collect pending ones
+    to_create = []
+    pending = []
+
+    for ch in chapters:
+        ch_num = str(ch['chapter_num'])
+        source_id = ch.get('source_id', '')
+
+        if ch_num in existing:
+            job = existing[ch_num]
+            if job.status in ('pending', 'failed'):
+                pending.append({
+                    'chapter_num': ch_num,
+                    'chapter_id': ch.get('chapter_id', ''),
+                    'job_id': job.id,
+                    'attempts': job.attempts,
+                })
+            # processing and published are skipped
+        else:
+            # New chapter — create pending job
+            to_create.append(ChapterJob(
+                slug=slug,
+                chapter_num=ch_num,
+                source_id=source_id,
+                status='pending',
+            ))
+            pending.append({
+                'chapter_num': ch_num,
+                'chapter_id': ch.get('chapter_id', ''),
+                'job_id': None,  # will be filled after bulk_create
+            })
+
+    if to_create:
+        ChapterJob.objects.bulk_create(to_create, ignore_conflicts=True)
+        # Re-fetch to get IDs
+        new_nums = {j.chapter_num for j in to_create}
+        new_jobs = {
+            j.chapter_num: j
+            for j in ChapterJob.objects.filter(slug=slug, chapter_num__in=new_nums)
+        }
+        for p in pending:
+            if p['job_id'] is None and p['chapter_num'] in new_jobs:
+                p['job_id'] = new_jobs[p['chapter_num']].id
+
+    # 4. Count stats
+    stats = ChapterJob.objects.filter(slug=slug).values_list('status', flat=True)
+    from collections import Counter
+    counts = Counter(stats)
+
+    return Response({
+        'pending': pending,
+        'published_count': counts.get('published', 0),
+        'failed_count': counts.get('failed', 0),
+        'processing_count': counts.get('processing', 0),
+        'reclaimed': reclaimed,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chapter_job_claim(request):
+    """
+    Worker marca um capítulo como processing (claim com lease).
+
+    POST /api/chapter-jobs/claim/
+    Body: {"job_id": 123, "worker_id": "worker-abc"}
+    ou:   {"slug": "solo-leveling", "chapter_num": "1", "worker_id": "worker-abc"}
+    """
+    job_id = request.data.get('job_id')
+    slug = request.data.get('slug')
+    chapter_num = request.data.get('chapter_num')
+    worker_id = request.data.get('worker_id', 'worker')
+
+    try:
+        if job_id:
+            job = ChapterJob.objects.get(id=job_id)
+        elif slug and chapter_num:
+            job, _ = ChapterJob.objects.get_or_create(
+                slug=slug, chapter_num=str(chapter_num),
+                defaults={'status': 'pending'},
+            )
+        else:
+            return Response({'error': 'job_id or slug+chapter_num required'}, status=400)
+
+        if job.status == 'published':
+            return Response({'status': 'already_published', 'job_id': job.id})
+
+        job.claim(worker_id)
+        return Response({'status': 'claimed', 'job_id': job.id})
+    except ChapterJob.DoesNotExist:
+        return Response({'error': 'job not found'}, status=404)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chapter_job_publish(request):
+    """
+    Worker marca um capítulo como published.
+
+    POST /api/chapter-jobs/publish/
+    Body: {"job_id": 123}
+    ou:   {"slug": "solo-leveling", "chapter_num": "1"}
+    """
+    job_id = request.data.get('job_id')
+    slug = request.data.get('slug')
+    chapter_num = request.data.get('chapter_num')
+
+    try:
+        if job_id:
+            job = ChapterJob.objects.get(id=job_id)
+        elif slug and chapter_num:
+            job = ChapterJob.objects.get(slug=slug, chapter_num=str(chapter_num))
+        else:
+            return Response({'error': 'job_id or slug+chapter_num required'}, status=400)
+
+        job.publish()
+        return Response({'status': 'published', 'job_id': job.id})
+    except ChapterJob.DoesNotExist:
+        return Response({'error': 'job not found'}, status=404)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chapter_job_fail(request):
+    """
+    Worker marca um capítulo como failed.
+
+    POST /api/chapter-jobs/fail/
+    Body: {"job_id": 123, "error": "timeout"}
+    ou:   {"slug": "solo-leveling", "chapter_num": "1", "error": "timeout"}
+    """
+    job_id = request.data.get('job_id')
+    slug = request.data.get('slug')
+    chapter_num = request.data.get('chapter_num')
+    error = request.data.get('error', '')
+
+    try:
+        if job_id:
+            job = ChapterJob.objects.get(id=job_id)
+        elif slug and chapter_num:
+            job = ChapterJob.objects.get(slug=slug, chapter_num=str(chapter_num))
+        else:
+            return Response({'error': 'job_id or slug+chapter_num required'}, status=400)
+
+        job.fail(error)
+        return Response({'status': 'failed', 'job_id': job.id, 'attempts': job.attempts})
+    except ChapterJob.DoesNotExist:
+        return Response({'error': 'job not found'}, status=404)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chapter_job_reclaim_stale(request):
+    """
+    Reclaim all stale processing jobs (lease expired).
+    Pode ser chamado periodicamente pelo scheduler ou worker.
+
+    POST /api/chapter-jobs/reclaim-stale/
+    """
+    now = timezone.now()
+    stale = ChapterJob.objects.filter(
+        status='processing',
+        lease_until__lt=now,
+    )
+    count = stale.count()
+    stale.update(status='pending', lease_until=None, lease_worker_id='')
+
+    return Response({'reclaimed': count})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def chapter_job_status(request):
+    """
+    Consulta status de capítulos de uma obra.
+
+    GET /api/chapter-jobs/status/?slug=solo-leveling
+    """
+    slug = request.query_params.get('slug', '')
+    if not slug:
+        return Response({'error': 'slug required'}, status=400)
+
+    jobs = ChapterJob.objects.filter(slug=slug)
+    from collections import Counter
+    counts = Counter(j.status for j in jobs)
+
+    return Response({
+        'slug': slug,
+        'total': jobs.count(),
+        'published': counts.get('published', 0),
+        'pending': counts.get('pending', 0),
+        'processing': counts.get('processing', 0),
+        'failed': counts.get('failed', 0),
+    })

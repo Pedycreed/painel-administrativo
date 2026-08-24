@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class Obra(models.Model):
@@ -131,3 +132,84 @@ class ListaLeitura(models.Model):
 
     def __str__(self):
         return f'{self.usuario} [{self.tipo}] {self.obra} [{self.fonte}]'
+
+
+class ChapterJob(models.Model):
+    """
+    Estado persistente de processamento de capítulos.
+    O scheduler e o worker usam esta tabela em vez de cache Redis.
+
+    Estados:
+      pending    — aguardando processamento
+      processing — worker está processando (com lease)
+      published  — capítulo publicado com sucesso
+      failed     — falha após tentativa(s)
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pendente'),
+        ('processing', 'Processando'),
+        ('published', 'Publicado'),
+        ('failed', 'Falhou'),
+    ]
+
+    slug = models.CharField(max_length=255, db_index=True)
+    chapter_num = models.CharField(max_length=20)
+    source_id = models.CharField(max_length=50, blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
+    attempts = models.IntegerField(default=0)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    lease_until = models.DateTimeField(null=True, blank=True)
+    lease_worker_id = models.CharField(max_length=100, blank=True, default='')
+    error_message = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('slug', 'chapter_num')
+        indexes = [
+            models.Index(fields=['slug', 'status']),
+            models.Index(fields=['status', 'lease_until']),
+        ]
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'{self.slug} cap {self.chapter_num} [{self.status}]'
+
+    @property
+    def is_lease_expired(self):
+        if self.lease_until is None:
+            return False
+        return timezone.now() > self.lease_until
+
+    def claim(self, worker_id: str, lease_minutes: int = 10):
+        """Marca como processing com lease."""
+        self.status = 'processing'
+        self.attempts += 1
+        self.last_attempt_at = timezone.now()
+        self.lease_until = timezone.now() + timezone.timedelta(minutes=lease_minutes)
+        self.lease_worker_id = worker_id
+        self.error_message = ''
+        self.save()
+
+    def publish(self):
+        """Marca como published."""
+        self.status = 'published'
+        self.lease_until = None
+        self.lease_worker_id = ''
+        self.error_message = ''
+        self.save()
+
+    def fail(self, error: str = ''):
+        """Marca como failed."""
+        self.status = 'failed'
+        self.lease_until = None
+        self.lease_worker_id = ''
+        self.error_message = error[:1000]
+        self.save()
+
+    def release(self):
+        """Libera de volta pra pending (lease expirou ou worker morreu)."""
+        self.status = 'pending'
+        self.lease_until = None
+        self.lease_worker_id = ''
+        self.save()

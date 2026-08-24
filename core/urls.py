@@ -12,6 +12,8 @@ from catalog.views import (
     PublicObraViewSet, FavoritoViewSet, HistoricoViewSet,
     ListaLeituraViewSet, generos_favoritos,
     ingest_chapter,
+    chapter_job_sync, chapter_job_claim, chapter_job_publish,
+    chapter_job_fail, chapter_job_reclaim_stale, chapter_job_status,
 )
 from accounts.views import (
     RegistroView,
@@ -67,6 +69,14 @@ urlpatterns = [
     path('api/', include(user_router.urls)),
     path('api/generos-favoritos/', generos_favoritos, name='generos-favoritos'),
     path('api/ingest-chapter/', ingest_chapter, name='ingest-chapter'),
+
+    # ChapterJob API (estado persistente de processamento)
+    path('api/chapter-jobs/sync/', chapter_job_sync, name='chapter-job-sync'),
+    path('api/chapter-jobs/claim/', chapter_job_claim, name='chapter-job-claim'),
+    path('api/chapter-jobs/publish/', chapter_job_publish, name='chapter-job-publish'),
+    path('api/chapter-jobs/fail/', chapter_job_fail, name='chapter-job-fail'),
+    path('api/chapter-jobs/reclaim-stale/', chapter_job_reclaim_stale, name='chapter-job-reclaim'),
+    path('api/chapter-jobs/status/', chapter_job_status, name='chapter-job-status'),
 
     # Rotas separadas por fonte (Scan)
     path('api/scan/', include([
